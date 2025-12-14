@@ -10,7 +10,7 @@ services:
     ports:
       - '3001:3001'
     volumes:
-      - whatsapp-auth:/app/backend/auth_info_baileys
+      - whatsapp-auth:/app/auth_info_baileys
     networks:
       - apps
 
