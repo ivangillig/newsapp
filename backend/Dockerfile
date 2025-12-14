@@ -2,8 +2,11 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Instalar dependencias para Puppeteer
+# Instalar dependencias de build y para Puppeteer
 RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
     chromium \
     nss \
     freetype \
@@ -18,7 +21,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 # Copiar package.json primero para cache de dependencias
 COPY package*.json ./
 
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copiar código fuente
 COPY . .
