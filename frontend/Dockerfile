@@ -1,25 +1,20 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine AS builder
 
-# Install dependencies
-FROM base AS deps
 WORKDIR /app
-COPY package.json ./
+
+COPY package*.json ./
 RUN npm install
 
-# Build
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . ./
+COPY . .
 
-# Build argument for API URL
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Build con la URL del API configurada
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build
 
 # Production
-FROM base AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

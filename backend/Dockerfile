@@ -1,7 +1,8 @@
-# Multi-stage build para Raspberry Pi
-FROM node:20-alpine AS base
+FROM node:20-alpine
 
-# Install dependencies for Puppeteer on ARM
+WORKDIR /app
+
+# Instalar dependencias para Puppeteer
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -14,18 +15,22 @@ RUN apk add --no-cache \
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-WORKDIR /app
+# Copiar package.json primero para cache de dependencias
+COPY package*.json ./
 
-# Copy and install dependencies
-COPY package.json ./
-RUN npm install --omit=dev
+RUN npm install
 
-# Copy backend app
-COPY . ./
+# Copiar código fuente
+COPY . .
 
-# Create directory for WhatsApp auth
+# Crear directorio de datos
 RUN mkdir -p /app/auth_info_baileys
 
+# Puerto
 EXPOSE 3001
 
-CMD ["npm", "start"]
+# Variables de entorno por defecto
+ENV NODE_ENV=production
+ENV PORT=3001
+
+CMD ["node", "index.js"]
