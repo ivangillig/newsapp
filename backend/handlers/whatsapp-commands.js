@@ -1,10 +1,6 @@
 import { getSummary } from '../services/ai-summarizer.js'
 import { logger } from '../utils/logger.js'
-
-// Extraer número de teléfono limpio del JID de WhatsApp
-function extractPhone(jid) {
-  return jid.split('@')[0]
-}
+import User from '../models/User.js'
 
 // Extraer las 6 principales noticias y formatear para WhatsApp
 function formatWhatsAppMessage(summary) {
@@ -66,19 +62,13 @@ const commands = {
   },
 
   // Suscripción
-  async suscribir(sock, from) {
+  async suscribir(sock, from, phone, lid) {
     try {
-      const phone = extractPhone(from)
-
-      await db.user.upsert({
-        where: { phone },
-        update: { subscribed: true },
-        create: {
-          phone,
-          subscribed: true,
-          isPaid: false,
-        },
-      })
+      await User.findOneAndUpdate(
+        { phone },
+        { $set: { subscribed: true, lid } },
+        { upsert: true, new: true }
+      )
 
       await sock.sendMessage(from, {
         text: '✅ ¡Listo! Recibirás un resumen de noticias todos los días a las 6:00 AM.\n\nComandos disponibles:\n• "pausar" - pausar suscripción\n• "reanudar" - reanudar suscripción\n• "actualizame" - resumen ahora',
@@ -92,53 +82,66 @@ const commands = {
   },
 
   // Pausar suscripción
-  async pausar(sock, from) {
+  async pausar(sock, from, phone) {
     try {
-      const phone = extractPhone(from)
+      const result = await User.updateOne(
+        { phone },
+        { $set: { subscribed: false } }
+      )
 
-      await db.user.update({
-        where: { phone },
-        data: { subscribed: false },
-      })
+      if (result.matchedCount === 0) {
+        await sock.sendMessage(from, {
+          text: '❌ No estás suscripto. Usa "suscribir" primero.',
+        })
+        return
+      }
 
       await sock.sendMessage(from, {
         text: '⏸️ Suscripción pausada. Usa "reanudar" para volver a activarla.',
       })
     } catch (error) {
       await sock.sendMessage(from, {
-        text: '❌ No estás suscripto. Usa "suscribir" primero.',
+        text: '❌ Error al pausar. Intenta nuevamente.',
       })
     }
   },
 
   // Reanudar suscripción
-  async reanudar(sock, from) {
+  async reanudar(sock, from, phone) {
     try {
-      const phone = extractPhone(from)
+      const result = await User.updateOne(
+        { phone },
+        { $set: { subscribed: true } }
+      )
 
-      await db.user.update({
-        where: { phone },
-        data: { subscribed: true },
-      })
+      if (result.matchedCount === 0) {
+        await sock.sendMessage(from, {
+          text: '❌ No estás suscripto. Usa "suscribir" primero.',
+        })
+        return
+      }
 
       await sock.sendMessage(from, {
         text: '▶️ ¡Suscripción reactivada! Volverás a recibir noticias a las 6:00 AM.',
       })
     } catch (error) {
       await sock.sendMessage(from, {
-        text: '❌ No estás suscripto. Usa "suscribir" primero.',
+        text: '❌ Error al reanudar. Intenta nuevamente.',
       })
     }
   },
 
   // Dar de baja (eliminar de la base de datos)
-  async baja(sock, from) {
+  async baja(sock, from, phone) {
     try {
-      const phone = extractPhone(from)
+      const result = await User.deleteOne({ phone })
 
-      await db.user.delete({
-        where: { phone },
-      })
+      if (result.deletedCount === 0) {
+        await sock.sendMessage(from, {
+          text: '❌ No estás registrado en el sistema.',
+        })
+        return
+      }
 
       await sock.sendMessage(from, {
         text: '👋 Te diste de baja correctamente. Si querés volver, escribí "suscribir".',
@@ -146,31 +149,32 @@ const commands = {
       logger.info(`User ${phone} unsubscribed and deleted`)
     } catch (error) {
       await sock.sendMessage(from, {
-        text: '❌ No estás registrado en el sistema.',
+        text: '❌ Error al dar de baja. Intenta nuevamente.',
       })
     }
   },
 
   // Ayuda
   async ayuda(sock, from) {
-    const helpText = `*RSMN - Comandos disponibles*
-
-• *actualizame* - Resumen de noticias ahora
-• *suscribir* - Noticias diarias a las 6 AM
-• *pausar* - Pausar envíos
-• *reanudar* - Reactivar suscripción
-• *baja* - Eliminar suscripción
-• *ayuda* - Ver este mensaje`
-
-    await sock.sendMessage(from, { text: helpText })
+    logger.info(`Ejecutando comando ayuda para ${from}`)
+    try {
+      const helpText =
+        'RSMN - Comandos: actualizame, suscribir, pausar, reanudar, baja, ayuda'
+      logger.info(`Enviando mensaje de ayuda...`)
+      await sock.sendMessage(from, { text: helpText })
+      logger.info(`Mensaje de ayuda enviado OK`)
+    } catch (error) {
+      logger.error(`Error en ayuda: ${error.message}`)
+    }
   },
 }
 
-export async function handleIncomingMessage(sock, from, text) {
+export async function handleIncomingMessage(sock, from, text, phone, lid) {
   const command = text.toLowerCase().trim()
+  logger.info(`Comando recibido: "${command}" de ${phone}`)
 
   if (commands[command]) {
-    await commands[command](sock, from)
+    await commands[command](sock, from, phone, lid)
   } else if (
     command.includes('hola') ||
     command.includes('ayuda') ||
@@ -178,8 +182,10 @@ export async function handleIncomingMessage(sock, from, text) {
   ) {
     await commands.ayuda(sock, from)
   } else {
+    logger.info(`Comando no reconocido, enviando respuesta default...`)
     await sock.sendMessage(from, {
       text: '❓ Comando no reconocido. Usa "ayuda" para ver comandos disponibles.',
     })
+    logger.info(`Respuesta default enviada OK`)
   }
 }

@@ -93,9 +93,12 @@ async function sendDailySummary() {
     for (let i = 0; i < subscribers.length; i++) {
       const user = subscribers[i]
       try {
-        const phoneNumber = `${user.phone}@s.whatsapp.net`
+        // Usar LID si está disponible, sino usar phone
+        const jid = user.lid
+          ? `${user.lid}@lid`
+          : `${user.phone}@s.whatsapp.net`
 
-        await sock.sendMessage(phoneNumber, {
+        await sock.sendMessage(jid, {
           text: whatsappMessage,
         })
 

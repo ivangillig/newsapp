@@ -1,162 +1,162 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 
 interface NewsItem {
-  headline: string;
-  content: string;
+  headline: string
+  content: string
 }
 
 interface NewsCategory {
-  title: string;
-  items: NewsItem[];
+  title: string
+  items: NewsItem[]
 }
 
 export default function Home() {
-  const [categories, setCategories] = useState<NewsCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [showSubscribe, setShowSubscribe] = useState(false);
-  const [phone, setPhone] = useState("");
-  const [subLoading, setSubLoading] = useState(false);
+  const [categories, setCategories] = useState<NewsCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [showSubscribe, setShowSubscribe] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [subLoading, setSubLoading] = useState(false)
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
-  const today = new Date().toLocaleDateString("es-AR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const today = new Date().toLocaleDateString('es-AR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   // Quitar emojis del texto
   const removeEmojis = (text: string) => {
     return text
       .replace(
         /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[📰🏛️💰⚽🌍🔬☁️🚨📊🎯🔑💡✨🔄⏰💬🔍🌧️]/gu,
-        ""
+        ''
       )
-      .trim();
-  };
+      .trim()
+  }
 
   // Parsear el summary markdown en categorías (sin PRINCIPALES)
   const parseSummary = (text: string): NewsCategory[] => {
-    const categories: NewsCategory[] = [];
+    const categories: NewsCategory[] = []
 
     // Dividir por ## (categorías)
-    const sections = text.split(/\n##\s+/);
+    const sections = text.split(/\n##\s+/)
 
     sections.forEach((section) => {
-      if (!section.trim()) return;
+      if (!section.trim()) return
 
-      const lines = section.split("\n");
-      let categoryTitle = removeEmojis(lines[0].replace(/^#\s*/, "")).trim();
+      const lines = section.split('\n')
+      let categoryTitle = removeEmojis(lines[0].replace(/^#\s*/, '')).trim()
 
       // Ignorar PRINCIPALES y secciones especiales
       if (
-        categoryTitle.toLowerCase().includes("principales") ||
-        categoryTitle.toLowerCase().includes("resumen ejecutivo") ||
-        categoryTitle.toLowerCase().includes("bullet") ||
-        categoryTitle.toLowerCase().includes("ultra-clave") ||
-        categoryTitle === "---"
+        categoryTitle.toLowerCase().includes('principales') ||
+        categoryTitle.toLowerCase().includes('resumen ejecutivo') ||
+        categoryTitle.toLowerCase().includes('bullet') ||
+        categoryTitle.toLowerCase().includes('ultra-clave') ||
+        categoryTitle === '---'
       ) {
-        return;
+        return
       }
 
-      const items: NewsItem[] = [];
+      const items: NewsItem[] = []
 
       // Procesar cada línea de la sección
       for (let i = 1; i < lines.length; i++) {
-        let line = lines[i].trim();
-        if (!line || line === "---") continue;
+        let line = lines[i].trim()
+        if (!line || line === '---') continue
 
         // Quitar bullet points y asteriscos
-        line = line.replace(/^[-•*]\s*/, "").replace(/\*\*/g, "");
-        line = removeEmojis(line);
+        line = line.replace(/^[-•*]\s*/, '').replace(/\*\*/g, '')
+        line = removeEmojis(line)
 
-        if (!line) continue;
+        if (!line) continue
 
         // Buscar patrón "Título: Contenido"
-        const colonIndex = line.indexOf(":");
+        const colonIndex = line.indexOf(':')
         if (colonIndex > 0 && colonIndex < 50) {
-          const headline = line.substring(0, colonIndex).trim().toUpperCase();
-          const content = line.substring(colonIndex + 1).trim();
+          const headline = line.substring(0, colonIndex).trim().toUpperCase()
+          const content = line.substring(colonIndex + 1).trim()
           if (headline && content) {
-            items.push({ headline, content });
+            items.push({ headline, content })
           }
         }
       }
 
       if (categoryTitle && items.length > 0) {
         const cleanTitle = categoryTitle
-          .replace(/^#\s*/, "")
+          .replace(/^#\s*/, '')
           .toUpperCase()
-          .trim();
-        categories.push({ title: cleanTitle, items });
+          .trim()
+        categories.push({ title: cleanTitle, items })
       }
-    });
+    })
 
-    return categories;
-  };
+    return categories
+  }
 
   const fetchNews = async () => {
-    setLoading(true);
-    setError("");
+    setLoading(true)
+    setError('')
     try {
-      const res = await fetch(`${API_URL}/api/summary`);
-      const data = await res.json();
+      const res = await fetch(`${API_URL}/api/summary`)
+      const data = await res.json()
       if (data.success) {
-        const parsedCategories = parseSummary(data.summary);
-        setCategories(parsedCategories);
+        const parsedCategories = parseSummary(data.summary)
+        setCategories(parsedCategories)
       } else {
-        setError("No se pudo obtener el resumen");
+        setError('No se pudo obtener el resumen')
       }
     } catch (e) {
-      setError("Error de conexión con el servidor");
+      setError('Error de conexión con el servidor')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchNews();
-  }, []);
+    fetchNews()
+  }, [])
 
   const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubLoading(true);
+    e.preventDefault()
+    setSubLoading(true)
     try {
       const res = await fetch(`${API_URL}/api/subscribe`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
-      });
-      const data = await res.json();
+      })
+      const data = await res.json()
       if (data.success) {
-        toast.success("¡Suscripción exitosa!", {
-          description: "Recibirás noticias todos los días a las 6:00 AM",
-        });
-        setPhone("");
-        setShowSubscribe(false);
+        toast.success('¡Suscripción exitosa!', {
+          description: 'Recibirás noticias todos los días a las 6:00 AM',
+        })
+        setPhone('')
+        setShowSubscribe(false)
       } else {
-        toast.error("Error al suscribir", {
-          description: data.error || "Intentá nuevamente",
-        });
+        toast.error('Error al suscribir', {
+          description: data.error || 'Intentá nuevamente',
+        })
       }
     } catch {
-      toast.error("Error de conexión", {
-        description: "Verificá tu conexión a internet",
-      });
+      toast.error('Error de conexión', {
+        description: 'Verificá tu conexión a internet',
+      })
     } finally {
-      setSubLoading(false);
+      setSubLoading(false)
     }
-  };
+  }
 
   // Agrupar categorías en filas de 3
-  const categoryRows: NewsCategory[][] = [];
+  const categoryRows: NewsCategory[][] = []
   for (let i = 0; i < categories.length; i += 3) {
-    categoryRows.push(categories.slice(i, i + 3));
+    categoryRows.push(categories.slice(i, i + 3))
   }
 
   return (
@@ -165,10 +165,13 @@ export default function Home() {
       <header className="px-8 lg:px-12 py-8 snap-start">
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-6xl lg:text-7xl font-bold tracking-tighter">
-              RSMN.
+            <h1
+              className="text-6xl lg:text-7xl font-black tracking-[-0.04em]"
+              style={{ fontFamily: 'var(--font-league-spartan)' }}
+            >
+              RSMN<span className="text-white">.</span>
             </h1>
-            <p className="text-xs tracking-[0.3em] text-zinc-500 mt-2">
+            <p className="text-xs tracking-[0.3em] text-zinc-500 mt-2 font-mono">
               resumen de noticias
             </p>
           </div>
@@ -206,7 +209,7 @@ export default function Home() {
                 disabled={subLoading}
                 className="px-6 py-2 bg-white text-black text-sm tracking-wider hover:bg-zinc-200 disabled:opacity-50"
               >
-                {subLoading ? "..." : "ENVIAR"}
+                {subLoading ? '...' : 'ENVIAR'}
               </button>
             </form>
           </div>
@@ -249,7 +252,7 @@ export default function Home() {
                         <p className="text-sm text-zinc-400 leading-relaxed">
                           <span className="font-bold tracking-wider text-zinc-300">
                             {item.headline}:
-                          </span>{" "}
+                          </span>{' '}
                           {item.content}
                         </p>
                       </article>
@@ -345,5 +348,5 @@ export default function Home() {
         </div>
       </footer>
     </div>
-  );
+  )
 }
