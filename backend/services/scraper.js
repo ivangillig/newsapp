@@ -14,8 +14,12 @@ export async function scrapePortal(url) {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-extensions',
+        '--single-process',
       ],
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      timeout: 60000,
     })
 
     const page = await browser.newPage()
