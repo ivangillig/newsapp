@@ -21,7 +21,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 # Copiar package.json primero para cache de dependencias
 COPY package*.json ./
 
-RUN npm install --legacy-peer-deps
+RUN npm ci
 
 # Copiar código fuente
 COPY . .
