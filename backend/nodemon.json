@@ -1,0 +1,13 @@
+{
+  "watch": [
+    "*.js",
+    "services/",
+    "handlers/",
+    "routes/",
+    "jobs/",
+    "utils/",
+    "db/"
+  ],
+  "ignore": ["auth_info_baileys/", "node_modules/", "*.db"],
+  "ext": "js,json"
+}

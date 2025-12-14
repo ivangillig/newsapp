@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Database
+*.db
+*.db-journal
+prisma/*.db
+prisma/*.db-journal
+
+# WhatsApp Baileys session - NEVER COMMIT THIS
+auth_info_baileys/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
