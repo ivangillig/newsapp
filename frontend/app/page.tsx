@@ -23,10 +23,16 @@ export default function Home() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
-  const today = new Date().toLocaleDateString('es-AR', {
+  const todayLong = new Date().toLocaleDateString('es-AR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
+    year: 'numeric',
+  })
+
+  const todayShort = new Date().toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
     year: 'numeric',
   })
 
@@ -163,7 +169,7 @@ export default function Home() {
     <div className="bg-black text-white snap-y snap-mandatory h-screen overflow-y-auto">
       {/* Header */}
       <header className="px-8 lg:px-12 py-8 snap-start">
-        <div className="flex justify-between items-end">
+        <div className="flex justify-between items-start md:items-end">
           <div>
             <a href="/" className="hover:opacity-80 transition">
               <h1
@@ -177,9 +183,14 @@ export default function Home() {
               resumen de noticias
             </p>
           </div>
-          <p className="text-sm tracking-[0.2em] text-zinc-400 capitalize pb-1">
-            {today}
-          </p>
+          <div className="pb-1">
+            <p className="hidden md:block text-sm tracking-[0.2em] text-zinc-400 capitalize">
+              {todayLong}
+            </p>
+            <p className="block md:hidden text-xs tracking-[0.15em] text-zinc-400">
+              {todayShort}
+            </p>
+          </div>
         </div>
       </header>
 

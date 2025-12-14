@@ -11,7 +11,7 @@ RUN npm ci
 COPY . .
 
 # Build con la URL del API configurada
-ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_API_URL=https://news-api.kabeza.fun
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build
