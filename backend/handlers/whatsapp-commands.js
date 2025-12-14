@@ -5,7 +5,7 @@ import User from '../models/User.js'
 // Extraer las 6 principales noticias y formatear para WhatsApp
 function formatWhatsAppMessage(summary) {
   const appDomain = process.env.APP_DOMAIN || 'rsmn.ar'
-  
+
   // Buscar la sección PRINCIPALES
   const principalesMatch = summary.match(
     /## PRINCIPALES([\s\S]*?)(?=## [A-ZÁÉÍÓÚ]|$)/

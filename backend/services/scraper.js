@@ -7,8 +7,10 @@ export async function scrapePortal(url) {
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8',
       },
       signal: AbortSignal.timeout(30000),
@@ -22,7 +24,9 @@ export async function scrapePortal(url) {
     const $ = cheerio.load(html)
 
     // Remove non-content elements
-    $('script, style, nav, footer, header, iframe, noscript, aside, .ad, .ads, .advertisement').remove()
+    $(
+      'script, style, nav, footer, header, iframe, noscript, aside, .ad, .ads, .advertisement'
+    ).remove()
 
     // Extract text from main content areas
     const textContent = $('article, main, .content, .article, .post, body')

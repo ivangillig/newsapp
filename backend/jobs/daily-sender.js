@@ -28,7 +28,7 @@ function cleanForWhatsApp(text) {
 // Extraer las 6 principales noticias y formatear para WhatsApp
 function formatWhatsAppMessage(summary) {
   const appDomain = process.env.APP_DOMAIN || 'rsmn.ar'
-  
+
   const principalesMatch = summary.match(
     /## PRINCIPALES([\s\S]*?)(?=## [A-ZÁÉÍÓÚ]|$)/
   )
