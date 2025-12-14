@@ -3,21 +3,21 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: news-app-backend
     restart: unless-stopped
     ports:
       - '3001:3001'
     volumes:
-      - whatsapp-auth:/app/auth_info_baileys
+      - whatsapp-auth:/app/backend/auth_info_baileys
     networks:
       - apps
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     container_name: news-app-frontend
