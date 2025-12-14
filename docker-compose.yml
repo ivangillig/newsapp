@@ -9,6 +9,12 @@ services:
     restart: unless-stopped
     ports:
       - '3001:3001'
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NEWS_PORTALS=${NEWS_PORTALS}
+      - PORT=3001
+      - NODE_ENV=production
     volumes:
       - whatsapp-auth:/app/auth_info_baileys
     networks:
