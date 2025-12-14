@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 services:
   backend:
@@ -8,39 +8,30 @@ services:
     container_name: news-app-backend
     restart: unless-stopped
     ports:
-      - "3001:3001"
-    environment:
-      - NODE_ENV=production
-    env_file:
-      - .env
+      - '3001:3001'
     volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - ./backend/auth_info_baileys:/app/auth_info_baileys
-      - ./backend/prisma:/app/prisma
+      - whatsapp-auth:/app/auth_info_baileys
     networks:
-      - news-network
+      - apps
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     container_name: news-app-frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://backend:3001
+      - '3000:3000'
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
     networks:
-      - news-network
+      - apps
+
+volumes:
+  whatsapp-auth:
 
 networks:
-  news-network:
-    driver: bridge
+  apps:
+    external: true

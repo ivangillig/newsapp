@@ -23,8 +23,8 @@ RUN npm ci --only=production
 # Copy app
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Create directory for WhatsApp auth
+RUN mkdir -p /app/auth_info_baileys
 
 EXPOSE 3001
 
