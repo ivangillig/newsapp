@@ -1,49 +1,35 @@
-import puppeteer from 'puppeteer'
+import * as cheerio from 'cheerio'
 import { logger } from '../utils/logger.js'
 
 export async function scrapePortal(url) {
-  let browser
-
   try {
     logger.info(`🔍 Scraping: ${url}`)
 
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--disable-software-rasterizer',
-        '--disable-extensions',
-        '--single-process',
-      ],
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-      timeout: 60000,
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'es-AR,es;q=0.9,en;q=0.8',
+      },
+      signal: AbortSignal.timeout(30000),
     })
 
-    const page = await browser.newPage()
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
 
-    // Set user agent to avoid detection
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    )
+    const html = await response.text()
+    const $ = cheerio.load(html)
 
-    await page.goto(url, {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    })
+    // Remove non-content elements
+    $('script, style, nav, footer, header, iframe, noscript, aside, .ad, .ads, .advertisement').remove()
 
-    // Extract all text from body
-    const textContent = await page.evaluate(() => {
-      // Remove script, style, and other non-content tags
-      const elementsToRemove = document.querySelectorAll(
-        'script, style, nav, footer, header, iframe, noscript'
-      )
-      elementsToRemove.forEach((el) => el.remove())
-
-      return document.body.innerText
-    })
+    // Extract text from main content areas
+    const textContent = $('article, main, .content, .article, .post, body')
+      .first()
+      .text()
+      .replace(/\s+/g, ' ')
+      .trim()
 
     logger.info(`✅ Scraped ${textContent.length} characters from ${url}`)
 
@@ -59,10 +45,6 @@ export async function scrapePortal(url) {
       content: '',
       error: error.message,
       scrapedAt: new Date().toISOString(),
-    }
-  } finally {
-    if (browser) {
-      await browser.close()
     }
   }
 }

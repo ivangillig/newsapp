@@ -165,12 +165,14 @@ export default function Home() {
       <header className="px-8 lg:px-12 py-8 snap-start">
         <div className="flex justify-between items-end">
           <div>
-            <h1
-              className="text-6xl lg:text-7xl font-black tracking-[-0.04em]"
-              style={{ fontFamily: 'var(--font-league-spartan)' }}
-            >
-              RSMN<span className="text-white">.</span>
-            </h1>
+            <a href="/" className="hover:opacity-80 transition">
+              <h1
+                className="text-6xl lg:text-7xl font-black tracking-[-0.04em]"
+                style={{ fontFamily: 'var(--font-league-spartan)' }}
+              >
+                RSMN<span className="text-white">.</span>
+              </h1>
+            </a>
             <p className="text-xs tracking-[0.3em] text-zinc-500 mt-2 font-mono">
               resumen de noticias
             </p>
@@ -270,7 +272,9 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <h3 className="text-2xl font-bold tracking-tighter mb-2">RSMN.</h3>
+            <a href="/" className="hover:opacity-80 transition">
+              <h3 className="text-2xl font-bold tracking-tighter mb-2">RSMN.</h3>
+            </a>
             <p className="text-xs text-zinc-600 tracking-wider">
               resumen de noticias
             </p>
@@ -343,7 +347,15 @@ export default function Home() {
             © 2025 RSMN. Todos los derechos reservados.
           </p>
           <p className="text-xs text-zinc-700 tracking-wider">
-            Desarrollado en Argentina
+            Desarrollado en Argentina por{' '}
+            <a
+              href="https://github.com/ivangillig"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-500 hover:text-white transition"
+            >
+              Ivan Gillig
+            </a>
           </p>
         </div>
       </footer>

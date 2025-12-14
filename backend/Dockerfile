@@ -2,21 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Instalar dependencias de build y para Puppeteer
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
-
-# Set Puppeteer to use system chromium
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# Instalar dependencias de build
+RUN apk add --no-cache python3 make g++
 
 # Copiar package.json primero para cache de dependencias
 COPY package*.json ./

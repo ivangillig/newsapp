@@ -27,6 +27,8 @@ function cleanForWhatsApp(text) {
 
 // Extraer las 6 principales noticias y formatear para WhatsApp
 function formatWhatsAppMessage(summary) {
+  const appDomain = process.env.APP_DOMAIN || 'rsmn.ar'
+  
   const principalesMatch = summary.match(
     /## PRINCIPALES([\s\S]*?)(?=## [A-ZÁÉÍÓÚ]|$)/
   )
@@ -39,7 +41,7 @@ function formatWhatsAppMessage(summary) {
     const bullets = lines
       .map((l) => `• ${cleanForWhatsApp(l.replace(/^-\s*/, '').trim())}`)
       .join('\n\n')
-    return `*RSMN - Las noticias del dia*\n\n${bullets}\n\nMas noticias en rsmn.ar`
+    return `*RSMN - Las noticias del dia*\n\n${bullets}\n\nMas noticias en ${appDomain}`
   }
 
   const principalesText = principalesMatch[1]
@@ -60,7 +62,7 @@ function formatWhatsAppMessage(summary) {
 
   return `*RSMN - Las noticias del dia*\n\n${newsLines.join(
     '\n\n'
-  )}\n\nMas noticias en rsmn.ar`
+  )}\n\nMas noticias en ${appDomain}`
 }
 
 async function sendDailySummary() {

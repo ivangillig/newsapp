@@ -13,6 +13,7 @@ services:
       - MONGODB_URI=${MONGODB_URI}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - NEWS_PORTALS=${NEWS_PORTALS}
+      - APP_DOMAIN=${APP_DOMAIN}
       - PORT=3001
       - NODE_ENV=production
     volumes:
