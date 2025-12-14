@@ -12,12 +12,14 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
-const appDomain = process.env.APP_DOMAIN || 'news.kabeza.fun'
+const appDomain = process.env.APP_DOMAIN
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   `https://${appDomain}`,
   `https://www.${appDomain}`,
+  // Dominios adicionales
+  'https://news.kabeza.fun',
 ]
 console.log('🔒 CORS allowed origins:', allowedOrigins)
 console.log('🌐 APP_DOMAIN:', appDomain)

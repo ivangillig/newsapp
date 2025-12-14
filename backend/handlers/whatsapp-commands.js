@@ -4,7 +4,8 @@ import User from '../models/User.js'
 
 // Extraer las 6 principales noticias y formatear para WhatsApp
 function formatWhatsAppMessage(summary) {
-  const appDomain = process.env.APP_DOMAIN || 'rsmn.ar'
+  const appDomain = process.env.APP_DOMAIN
+  const appUrl = `https://${appDomain}`
 
   // Buscar la sección PRINCIPALES
   const principalesMatch = summary.match(
@@ -20,7 +21,7 @@ function formatWhatsAppMessage(summary) {
     const bullets = lines
       .map((l) => `• ${l.replace(/^-\s*/, '').trim()}`)
       .join('\n\n')
-    return `*RSMN - Las noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appDomain}`
+    return `*RSMN - Las noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appUrl}`
   }
 
   // Parsear las noticias principales
@@ -43,7 +44,7 @@ function formatWhatsAppMessage(summary) {
 
   const bullets = newsLines.join('\n\n')
 
-  return `*RSMN - Las noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appDomain}`
+  return `*RSMN - Las noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appUrl}`
 }
 
 const commands = {
