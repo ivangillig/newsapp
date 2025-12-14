@@ -12,15 +12,28 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
-const appDomain = process.env.APP_DOMAIN || 'rsmn.ar'
+const appDomain = process.env.APP_DOMAIN || 'news.kabeza.fun'
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  `https://${appDomain}`,
+  `https://www.${appDomain}`,
+]
+console.log('🔒 CORS allowed origins:', allowedOrigins)
+console.log('🌐 APP_DOMAIN:', appDomain)
+
 app.use(
   cors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      `https://${appDomain}`,
-      `https://www.${appDomain}`,
-    ],
+    origin: (origin, callback) => {
+      console.log('📥 Request from origin:', origin)
+      // Allow requests with no origin (mobile apps, curl, etc)
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true)
+      }
+      console.log('❌ CORS blocked:', origin)
+      return callback(new Error('Not allowed by CORS'))
+    },
   })
 )
 app.use(express.json())
