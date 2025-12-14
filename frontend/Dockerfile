@@ -3,14 +3,14 @@ FROM node:20-alpine AS base
 # Install dependencies
 FROM base AS deps
 WORKDIR /app
-COPY frontend/package.json ./
+COPY package.json ./
 RUN npm install
 
 # Build
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY frontend/ ./
+COPY . ./
 
 # Build argument for API URL
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001

@@ -17,11 +17,11 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 WORKDIR /app
 
 # Copy and install dependencies
-COPY backend/package.json ./
+COPY package.json ./
 RUN npm install --omit=dev
 
 # Copy backend app
-COPY backend/ ./
+COPY . ./
 
 # Create directory for WhatsApp auth
 RUN mkdir -p /app/auth_info_baileys
