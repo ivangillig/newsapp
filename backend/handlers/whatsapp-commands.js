@@ -74,7 +74,7 @@ const commands = {
       )
 
       await sock.sendMessage(from, {
-        text: '✅ ¡Listo! Recibirás un resumen de noticias todos los días a las 6:00 AM.\n\nComandos disponibles:\n• "pausar" - pausar suscripción\n• "reanudar" - reanudar suscripción\n• "actualizame" - resumen ahora',
+        text: '✅ ¡Listo! Recibirás un resumen de noticias todos los días a las 6:00 AM.\n\nComandos disponibles:\n• "pausar" - pausar suscripción\n• "reanudar" - reanudar suscripción\n• "actualizame" - Te envío las últimas noticias',
       })
     } catch (error) {
       logger.error('Error subscribing user:', error)
