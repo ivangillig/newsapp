@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 interface NewsItem {
   headline: string
   content: string
+  url?: string // URL del artículo
 }
 
 interface NewsCategory {
@@ -20,6 +21,17 @@ export default function Home() {
   const [showSubscribe, setShowSubscribe] = useState(false)
   const [phone, setPhone] = useState('')
   const [subLoading, setSubLoading] = useState(false)
+
+  // Estados para el modal de artículo
+  const [selectedArticle, setSelectedArticle] = useState<{
+    title: string
+    content: string
+    url: string
+    explained?: string
+  } | null>(null)
+  const [articleLoading, setArticleLoading] = useState(false)
+  const [showExplained, setShowExplained] = useState(false) // Toggle entre content y explained
+  const [isTransitioning, setIsTransitioning] = useState(false) // Para animar el cambio
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
@@ -77,6 +89,17 @@ export default function Home() {
         let line = lines[i].trim()
         if (!line || line === '---') continue
 
+        // Detectar URLs en formato [URL]
+        if (line.match(/^\[https?:\/\//)) {
+          // Es una URL, asignarla al último item
+          const urlMatch = line.match(/\[(https?:\/\/[^\]]+)\]/)
+          if (urlMatch && items.length > 0) {
+            console.log('Found URL for item:', urlMatch[1])
+            items[items.length - 1].url = urlMatch[1]
+          }
+          continue
+        }
+
         // Quitar bullet points y asteriscos
         line = line.replace(/^[-•*]\s*/, '').replace(/\*\*/g, '')
         line = removeEmojis(line)
@@ -99,6 +122,11 @@ export default function Home() {
           .replace(/^#\s*/, '')
           .toUpperCase()
           .trim()
+        console.log(
+          `Category ${cleanTitle}: ${items.length} items, ${
+            items.filter((i) => i.url).length
+          } with URLs`
+        )
         categories.push({ title: cleanTitle, items })
       }
     })
@@ -113,6 +141,7 @@ export default function Home() {
       const res = await fetch(`${API_URL}/api/summary`)
       const data = await res.json()
       if (data.success) {
+        console.log('Raw summary:', data.summary.substring(0, 500))
         const parsedCategories = parseSummary(data.summary)
         setCategories(parsedCategories)
       } else {
@@ -128,6 +157,18 @@ export default function Home() {
   useEffect(() => {
     fetchNews()
   }, [])
+
+  // Cerrar modal con ESC
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedArticle) {
+        setSelectedArticle(null)
+        setShowExplained(false)
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [selectedArticle])
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -157,6 +198,46 @@ export default function Home() {
     } finally {
       setSubLoading(false)
     }
+  }
+
+  const handleArticleClick = async (url: string, headline: string) => {
+    setArticleLoading(true)
+    try {
+      const res = await fetch(
+        `${API_URL}/api/article?url=${encodeURIComponent(url)}`
+      )
+      const data = await res.json()
+      if (data.success && data.article) {
+        setSelectedArticle({
+          title: data.article.title || headline,
+          content: data.article.content,
+          url: data.article.url,
+          explained: data.article.explained,
+        })
+        setShowExplained(false) // Empezar siempre mostrando contenido original
+      } else {
+        toast.error('Artículo no disponible', {
+          description: 'El contenido completo aún no fue procesado',
+        })
+      }
+    } catch {
+      toast.error('Error al cargar artículo')
+    } finally {
+      setArticleLoading(false)
+    }
+  }
+
+  // Toggle con transición animada
+  const toggleExplained = () => {
+    setIsTransitioning(true)
+    // Fade out
+    setTimeout(() => {
+      setShowExplained(!showExplained)
+      // Fade in después del cambio
+      setTimeout(() => {
+        setIsTransitioning(false)
+      }, 50)
+    }, 300) // Duración del fade out
   }
 
   // Agrupar categorías en filas de 3
@@ -263,9 +344,20 @@ export default function Home() {
                     {category.items.map((item, itemIdx) => (
                       <article key={itemIdx}>
                         <p className="text-sm text-zinc-400 leading-relaxed">
-                          <span className="font-bold tracking-wider text-zinc-300">
-                            {item.headline}:
-                          </span>{' '}
+                          {item.url ? (
+                            <button
+                              onClick={() =>
+                                handleArticleClick(item.url!, item.headline)
+                              }
+                              className="font-bold tracking-wider text-zinc-300 hover:text-white transition cursor-pointer text-left"
+                            >
+                              {item.headline}:
+                            </button>
+                          ) : (
+                            <span className="font-bold tracking-wider text-zinc-300">
+                              {item.headline}:
+                            </span>
+                          )}{' '}
                           {item.content}
                         </p>
                       </article>
@@ -372,6 +464,85 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      {/* Modal de artículo */}
+      {selectedArticle && (
+        <div
+          className="fixed inset-0 bg-black/95 z-50 overflow-y-auto animate-in fade-in duration-300"
+          onClick={() => {
+            setSelectedArticle(null)
+            setShowExplained(false)
+          }}
+        >
+          <div
+            className="min-h-screen px-8 lg:px-16 py-12"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="max-w-3xl mx-auto animate-in slide-in-from-bottom duration-500">
+              {/* Header del modal */}
+              <div className="flex justify-between items-start mb-8">
+                <h1 className="text-3xl font-bold tracking-tight text-white">
+                  {selectedArticle.title}
+                </h1>
+                <button
+                  onClick={() => {
+                    setSelectedArticle(null)
+                    setShowExplained(false)
+                  }}
+                  className="text-zinc-500 hover:text-white text-2xl ml-4 transition"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Botón Explicame - solo mostrar si hay explained disponible */}
+              {selectedArticle.explained && (
+                <div className="mb-6">
+                  <button
+                    onClick={toggleExplained}
+                    disabled={isTransitioning}
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg transition-all duration-300 border border-zinc-700 hover:border-zinc-500 disabled:opacity-50"
+                  >
+                    <span className="text-xl">✨</span>
+                    <span className="text-sm font-medium">
+                      {showExplained ? 'Ver Original' : 'Explicame'}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {/* Contenido del artículo con transición mágica */}
+              <div className="prose prose-invert prose-zinc max-w-none relative overflow-hidden">
+                <div
+                  className="text-zinc-300 leading-relaxed whitespace-pre-wrap transition-all duration-500 ease-out"
+                  style={{
+                    opacity: isTransitioning ? 0 : 1,
+                    transform: isTransitioning
+                      ? 'scale(0.98) translateY(10px)'
+                      : 'scale(1) translateY(0)',
+                  }}
+                >
+                  {showExplained && selectedArticle.explained
+                    ? selectedArticle.explained
+                    : selectedArticle.content}
+                </div>
+              </div>
+
+              {/* Footer del modal */}
+              <div className="mt-8 pt-6 border-t border-zinc-800">
+                <a
+                  href={selectedArticle.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-zinc-500 hover:text-white transition"
+                >
+                  Ver artículo original →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

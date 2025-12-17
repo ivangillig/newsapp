@@ -161,4 +161,49 @@ router.get('/stats', async (req, res) => {
   }
 })
 
+// Get article by URL
+router.get('/article', async (req, res) => {
+  try {
+    const { url } = req.query
+
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        error: 'URL parameter required',
+      })
+    }
+
+    // Search in the latest cache
+    const cached = await NewsCache.findOne().sort({ createdAt: -1 })
+
+    if (!cached || !cached.articles) {
+      return res.status(404).json({
+        success: false,
+        error: 'No cached articles found',
+      })
+    }
+
+    // Search for the article by URL
+    const article = cached.articles.find((a) => a.url === url)
+
+    if (!article) {
+      return res.status(404).json({
+        success: false,
+        error: 'Article not found in cache',
+      })
+    }
+
+    res.json({
+      success: true,
+      article,
+    })
+  } catch (error) {
+    logger.error('Error getting article:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get article',
+    })
+  }
+})
+
 export default router

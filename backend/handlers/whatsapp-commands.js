@@ -21,7 +21,7 @@ function formatWhatsAppMessage(summary) {
     const bullets = lines
       .map((l) => `• ${l.replace(/^-\s*/, '').trim()}`)
       .join('\n\n')
-    return `*RSMN - Las noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appUrl}`
+    return `*RSMN - Top 5 noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appUrl}`
   }
 
   // Parsear las noticias principales
@@ -44,7 +44,7 @@ function formatWhatsAppMessage(summary) {
 
   const bullets = newsLines.join('\n\n')
 
-  return `*RSMN - Las noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appUrl}`
+  return `*RSMN - Top 5 noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appUrl}`
 }
 
 const commands = {

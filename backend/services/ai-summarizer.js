@@ -1,7 +1,7 @@
 import OpenAI from 'openai'
 import { logger } from '../utils/logger.js'
 import NewsCache from '../models/NewsCache.js'
-import { scrapeAllPortals } from './scraper.js'
+import { scrapeAllPortals, scrapeArticle } from './scraper.js'
 
 // Lazy initialization - se crea cuando se usa, no al importar
 let openai = null
@@ -20,7 +20,7 @@ Te paso contenido crudo de portales de noticias. Tu tarea es generar un resumen 
 
 REGLAS ESTRICTAS:
 
-1. ESTRUCTURA: Primero una sección PRINCIPALES, luego 9 categorías:
+1. ESTRUCTURA: Primero una sección PRINCIPALES, luego si o si 9 categorías:
 
    ## PRINCIPALES
    (Las 5 noticias más importantes del día, sin importar categoría)
@@ -35,22 +35,24 @@ REGLAS ESTRICTAS:
    ## POLICIALES
    ## CLIMA
 
-2. FORMATO: Usá este formato exacto:
+2. FORMATO: Usá este formato exacto (INCLUIR URL debajo de cada noticia):
    ## NOMBRE_CATEGORIA
    - Título de la noticia: Descripción breve y clara de la noticia.
+   [URL_DE_LA_NOTICIA]
    - Otra noticia: Descripción de esta otra noticia.
+   [URL_DE_LA_NOTICIA]
 
 3. CONTENIDO:
    - PRINCIPALES: Exactamente 5 noticias (las más relevantes del día)
    - Otras categorías: Máximo 3 noticias cada una
-   - Cada noticia tiene: Título corto + dos puntos + descripción
+   - Cada noticia tiene: Título corto + dos puntos + descripción + URL en línea siguiente entre []
    - Frases directas, sin rodeos
    - Si no hay noticias de una categoría, omitila (excepto PRINCIPALES)
 
 4. PROHIBIDO:
    - NO uses emojis ni iconos
-   - NO uses asteriscos ni formato markdown excepto ## para categorías
-   - NO repitas información entre PRINCIPALES y otras categorías
+   - NO uses asteriscos ni formato markdown excepto ## para categorías y [] para URLs
+   - NO repitas noticias en más de una categoría (excepto PRINCIPALES)
 
 5. TONO: Informal-profesional, como explicárselo a alguien inteligente con poco tiempo.
 
@@ -81,7 +83,77 @@ export async function summarizeContent(rawContent) {
   }
 }
 
-// Verificar si el cache es reciente (menos de 30 minutos)
+// Explain article in informal/casual tone
+export async function explainArticle(title, content) {
+  try {
+    const EXPLAIN_PROMPT = `Sos un periodista argentino que explica noticias de forma clara y accesible para cualquier persona.
+
+Tu objetivo es explicar la noticia de manera que cualquiera la entienda, sin perder profesionalismo.
+
+TONO Y ESTILO:
+- Profesional pero cercano (NO uses "che", "boludo" ni exceso de lunfardo)
+- Mantené neutralidad política absoluta
+- Podés usar palabras coloquiales como "guita", "quilombo" si ayudan a clarificar
+- Explicá conceptos técnicos/políticos de forma simple, con ejemplos concretos
+
+FORMATO VISUAL (MUY IMPORTANTE):
+- PROHIBIDO usar markdown: NO uses #, ##, ###, **, __, etc.
+- Los títulos/subtítulos se hacen SOLO con emojis + texto plano
+- Ejemplo correcto: "🧉 ¿Qué dijo X, básicamente?" o "💸 ¿Por qué no juntaron reservas?"
+- Usá bullets con símbolos por ejemplo estos: 👉, •, ✅, ❌ (NO uses - o * para bullets)
+- Frases cortas y directas
+- Líneas en blanco entre secciones para respirar
+
+ESTRUCTURA:
+- Dividí en bloques temáticos con preguntas como subtítulos
+- Cada sección empieza con emoji + pregunta o título descriptivo
+- Usá bullets para listar puntos clave
+- Cerrá con un resumen corto de lo más importante
+
+CONTENIDO:
+- Explicá los hechos principales de forma clara
+- Traducí/aclará entre paréntesis lo que sea complejo
+- Ejemplos concretos cuando ayude
+
+Devolvé SOLO la explicación en texto plano con emojis, sin markdown.`
+
+    const response = await getOpenAI().chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: EXPLAIN_PROMPT },
+        {
+          role: 'user',
+          content: `Título: ${title}\n\nContenido:\n${content.substring(
+            0,
+            3000
+          )}`, // Limitar para evitar exceso de tokens
+        },
+      ],
+      temperature: 0.8, // Más creativo para el tono informal
+      max_tokens: 1000,
+    })
+
+    const explanation = response.choices[0].message.content
+    return explanation
+  } catch (error) {
+    logger.error('Error explaining article:', error)
+    return null // Si falla, no bloquear todo
+  }
+}
+
+// Extract URLs from the summary markdown
+function extractUrlsFromSummary(summary) {
+  const urls = []
+  // Search for [URL] in the markdown
+  const urlRegex = /\[(https?:\/\/[^\]]+)\]/g
+  let match
+  while ((match = urlRegex.exec(summary)) !== null) {
+    urls.push(match[1])
+  }
+  return [...new Set(urls)] // Deduplicate
+}
+
+// Check if the cache is recent (less than 30 minutes)
 export async function isCacheRecent() {
   const cached = await NewsCache.findOne().sort({ createdAt: -1 })
 
@@ -92,7 +164,7 @@ export async function isCacheRecent() {
   return cacheAge < thirtyMinutes
 }
 
-// Obtener el último resumen cacheado (para usuarios)
+// Get the latest cached summary (for users)
 export async function getSummary() {
   try {
     const cached = await NewsCache.findOne().sort({ createdAt: -1 })
@@ -104,7 +176,7 @@ export async function getSummary() {
       return cached.summary
     }
 
-    // Si no hay cache, generar uno (solo la primera vez)
+    // If no cache, generate one (only the first time)
     logger.info('⚠️ No cache found, generating first summary...')
     return await refreshSummary()
   } catch (error) {
@@ -113,7 +185,7 @@ export async function getSummary() {
   }
 }
 
-// Refrescar el cache (solo para cron jobs)
+// Refresh the cache (only for cron jobs)
 export async function refreshSummary() {
   try {
     logger.info('🔄 Refreshing news cache...')
@@ -121,26 +193,86 @@ export async function refreshSummary() {
     // Scrape fresh content
     const scrapedData = await scrapeAllPortals()
 
-    // Combine all content
-    const combinedContent = scrapedData
-      .filter((s) => !s.error && s.content)
-      .map((s) => `=== ${s.url} ===\n${s.content}`)
-      .join('\n\n---\n\n')
+    // Collect all articles
+    const allArticles = []
+    scrapedData.forEach((portalData) => {
+      if (!portalData.error && portalData.articles) {
+        allArticles.push(...portalData.articles)
+      }
+    })
 
-    if (!combinedContent) {
-      throw new Error('No content scraped from portals')
+    if (allArticles.length === 0) {
+      throw new Error('No articles scraped from portals')
     }
+
+    logger.info(`📰 Collected ${allArticles.length} articles`)
+
+    // Formatting articles for OpenAI (only include content if it exists)
+    const combinedContent = allArticles
+      .map((article) => {
+        const parts = [`[${article.portal}] ${article.title}`]
+        if (article.content) {
+          parts.push(article.content)
+        }
+        parts.push(`URL: ${article.url}`)
+        return parts.join('\n')
+      })
+      .join('\n\n---\n\n')
 
     // Generate summary with AI
     const summary = await summarizeContent(combinedContent)
 
-    // Save to cache
+    // Extract URLs from the generated summary
+    const selectedUrls = extractUrlsFromSummary(summary)
+    logger.info(`🔗 Summary contains ${selectedUrls.length} article URLs`)
+
+    // Scrape full content of selected articles
+    const fullArticles = []
+    if (selectedUrls.length > 0) {
+      logger.info('📥 Fetching full content for selected articles...')
+      const articlePromises = selectedUrls.map((url) => scrapeArticle(url))
+      const scrapedArticles = await Promise.all(articlePromises)
+
+      // Process each article and generate explanation IN PARALLEL
+      logger.info(
+        `🤖 Explaining ${scrapedArticles.length} articles in parallel...`
+      )
+      const explanationPromises = scrapedArticles.map(async (article) => {
+        if (article.error || !article.content) {
+          return null
+        }
+
+        const portalName = new URL(article.url).hostname.replace('www.', '')
+
+        // Generate informal explanation with AI
+        logger.info(`🤖 Explaining: ${article.title.substring(0, 50)}...`)
+        const explained = await explainArticle(article.title, article.content)
+
+        return {
+          title: article.title,
+          url: article.url,
+          content: article.content,
+          portal: portalName,
+          explained: explained || 'Explicación no disponible 🤷',
+        }
+      })
+
+      const results = await Promise.all(explanationPromises)
+      fullArticles.push(...results.filter((article) => article !== null))
+
+      logger.info(
+        `✅ Fetched and explained ${fullArticles.length}/${selectedUrls.length} articles`
+      )
+    }
+
+    // Save to cache with full articles
     await NewsCache.create({
       summary,
-      rawContent: combinedContent.substring(0, 50000),
+      articles: fullArticles, // Full articles, not the original 160
+      rawContent: combinedContent.substring(0, 50000), // Keep for backward compatibility
     })
 
-    // Limpiar cache viejo (mantener solo últimos 10)
+    // Clean old cache (keep only the last 10)
     const allCache = await NewsCache.find().sort({ createdAt: -1 }).skip(10)
 
     if (allCache.length > 0) {
