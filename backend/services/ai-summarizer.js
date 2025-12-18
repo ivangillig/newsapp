@@ -38,30 +38,34 @@ REGLAS ESTRICTAS:
 1. CATEGORÍAS DISPONIBLES (en este orden):
    - PRINCIPALES (exactamente 5 URLs - las noticias más relevantes del día, solo para WhatsApp)
    - POLÍTICA
-   - ECONOMÍA  
+   - ECONOMÍA
    - MUNDO
-   - TECNOLOGÍA
+   - CIENCIA Y TECNOLOGÍA
    - SOCIEDAD
    - DEPORTES
    - ESPECTÁCULOS
-   - POLICIALES
+   - SEGURIDAD Y DEFENSA (incluye: crimen, ataques militares, defensa nacional, violencia, robos, narcotráfico, etc.)
    - CLIMA
 
 2. SELECCIÓN POR CATEGORÍA (MUY IMPORTANTE):
    - PRINCIPALES: Exactamente 5 URLs (las más importantes del día, solo para WhatsApp)
    - TODAS las demás categorías: MÍNIMO 3 URLs, MÁXIMO 4 URLs cada una
-   - OBJETIVO TOTAL: Entre 30 y 35 artículos (sin contar PRINCIPALES)
-   - Si hay 4 buenas noticias de una categoría, INCLUÍ LAS 4
-   - Solo si no hay al menos 3 noticias relevantes, OMITÍ esa categoría
+   - Si una categoría no tiene 3 noticias relevantes, buscar más relacionadas
+   - OBJETIVO TOTAL: Aproximadamente 30 o 35 artículos (sin contar PRINCIPALES)
    - Las URLs de PRINCIPALES SÍ DEBEN repetirse en sus categorías correspondientes
    - Solo seleccioná URLs que realmente existan en la lista que te paso
-   - NO SEAS CONSERVADOR: Si ves noticias de calidad, incluílas
+   - SÉ AGRESIVO: Incluí todas las noticias interesantes, no seas conservador
+   - Ejemplo: Si hay noticias de F1, fútbol, tenis → todas van a DEPORTES hasta completar 4
+   - Ejemplo: Ataques militares, narcotráfico, robos → SEGURIDAD Y DEFENSA hasta completar 4
 
 3. IMPORTANTE:
    - Devolvé SOLO las URLs, no títulos ni descripciones
    - Las URLs deben estar completas (https://...)
-   - Preferí SIEMPRE 4 URLs por categoría cuando sea posible
-   - OBJETIVO: ~8-9 categorías con 3-4 artículos cada una = 30-35 artículos totales
+   - SIEMPRE 4 URLs por categoría (excepto PRINCIPALES que son 5)
+   - Si una categoría parece tener pocas noticias, buscá más profundo en la lista
+   - OBJETIVO: 9 categorías × 4 artículos = 36 artículos totales
+   - Ejemplo deportes: F1 + fútbol + tenis + básquet = 4 noticias
+   - Ejemplo seguridad: crimen + narcotráfico + ataques + robos = 4 noticias
 
 Devolvé SOLO el objeto JSON con las URLs categorizadas.`
 
@@ -77,8 +81,8 @@ export async function selectArticles(rawContent) {
         { role: 'user', content: rawContent },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.7,
-      max_tokens: 3500, // Increased for more articles
+      temperature: 0.8, // Increased to be more creative in selection
+      max_tokens: 4000, // Increased for more articles
     })
 
     const selection = response.choices[0].message.content
