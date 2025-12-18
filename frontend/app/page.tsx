@@ -2,6 +2,23 @@
 
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface NewsItem {
   headline: string
@@ -12,6 +29,73 @@ interface NewsItem {
 interface NewsCategory {
   title: string
   items: NewsItem[]
+}
+
+// Sortable Category Component
+function SortableCategory({
+  category,
+  onArticleClick,
+}: {
+  category: NewsCategory
+  onArticleClick: (url: string, headline: string) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.title })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-md font-bold tracking-[0.2em] text-zinc-200 pb-3 border-b border-zinc-800 flex-1">
+          {category.title}
+        </h2>
+        <button
+          {...attributes}
+          {...listeners}
+          className="ml-2 p-2 text-zinc-600 hover:text-zinc-300 cursor-grab active:cursor-grabbing transition"
+          title="Arrastrar para reordenar"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="4" cy="4" r="1.5" />
+            <circle cx="12" cy="4" r="1.5" />
+            <circle cx="4" cy="8" r="1.5" />
+            <circle cx="12" cy="8" r="1.5" />
+            <circle cx="4" cy="12" r="1.5" />
+            <circle cx="12" cy="12" r="1.5" />
+          </svg>
+        </button>
+      </div>
+      <div className="space-y-6">
+        {category.items.map((item, itemIdx) => (
+          <article
+            key={itemIdx}
+            onClick={() => item.url && onArticleClick(item.url, item.headline)}
+            className={item.url ? 'cursor-pointer group' : ''}
+          >
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              <span className="font-bold tracking-wider text-zinc-300 group-hover:text-white transition">
+                {item.headline}:
+              </span>{' '}
+              <span className="group-hover:text-zinc-300 transition">
+                {item.content}
+              </span>
+            </p>
+          </article>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function Home() {
@@ -108,6 +192,37 @@ export default function Home() {
     }
   }
 
+  // Load saved category order from localStorage
+  const loadCategoryOrder = (categories: NewsCategory[]): NewsCategory[] => {
+    if (typeof window === 'undefined') return categories
+
+    const saved = localStorage.getItem('categoryOrder')
+    if (!saved) return categories
+
+    try {
+      const orderMap: Record<string, number> = JSON.parse(saved)
+      return [...categories].sort((a, b) => {
+        const orderA = orderMap[a.title] ?? 999
+        const orderB = orderMap[b.title] ?? 999
+        return orderA - orderB
+      })
+    } catch {
+      return categories
+    }
+  }
+
+  // Save category order to localStorage
+  const saveCategoryOrder = (categories: NewsCategory[]) => {
+    if (typeof window === 'undefined') return
+
+    const orderMap = categories.reduce((acc, cat, index) => {
+      acc[cat.title] = index
+      return acc
+    }, {} as Record<string, number>)
+
+    localStorage.setItem('categoryOrder', JSON.stringify(orderMap))
+  }
+
   const fetchNews = async () => {
     setLoading(true)
     setError('')
@@ -117,7 +232,8 @@ export default function Home() {
       if (data.success && data.articles && Array.isArray(data.articles)) {
         console.log('Total articles received:', data.articles.length)
         const parsedCategories = parseSummary(data.articles)
-        setCategories(parsedCategories)
+        const orderedCategories = loadCategoryOrder(parsedCategories)
+        setCategories(orderedCategories)
       } else {
         setError('No se pudo obtener el resumen')
       }
@@ -131,6 +247,38 @@ export default function Home() {
   useEffect(() => {
     fetchNews()
   }, [])
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      setCategories((items) => {
+        const oldIndex = items.findIndex((item) => item.title === active.id)
+        const newIndex = items.findIndex((item) => item.title === over.id)
+        const newOrder = arrayMove(items, oldIndex, newIndex)
+        saveCategoryOrder(newOrder)
+        toast.success('Orden guardado')
+        return newOrder
+      })
+    }
+  }
+
+  // Reset category order
+  const resetCategoryOrder = () => {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem('categoryOrder')
+    fetchNews()
+    toast.success('Orden restablecido')
+  }
 
   // Close modal with ESC
   useEffect(() => {
@@ -214,16 +362,10 @@ export default function Home() {
     }, 300) // Fade out duration
   }
 
-  // Agrupar categorías en filas de 3
-  const categoryRows: NewsCategory[][] = []
-  for (let i = 0; i < categories.length; i += 3) {
-    categoryRows.push(categories.slice(i, i + 3))
-  }
-
   return (
-    <div className="bg-black text-white snap-y snap-mandatory h-screen overflow-y-auto">
+    <div className="bg-black text-white h-screen overflow-y-auto">
       {/* Header */}
-      <header className="px-8 lg:px-12 py-8 snap-start">
+      <header className="px-8 lg:px-12 py-8">
         <div className="flex justify-between items-start md:items-end">
           <div>
             <a href="/" className="hover:opacity-80 transition">
@@ -302,44 +444,39 @@ export default function Home() {
           </button>
         </div>
       ) : (
-        /* Filas de categorías - cada fila es un snap point */
-        categoryRows.map((row, rowIdx) => (
-          <section
-            key={rowIdx}
-            className="snap-start px-8 lg:px-12 py-12  border-zinc-800"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-20">
-              {row.map((category, idx) => (
-                <div key={idx} className="space-y-6">
-                  <h2 className="text-md font-bold tracking-[0.2em] text-zinc-200 pb-3 border-b border-zinc-800">
-                    {category.title}
-                  </h2>
-                  <div className="space-y-6">
-                    {category.items.map((item, itemIdx) => (
-                      <article
-                        key={itemIdx}
-                        onClick={() =>
-                          item.url &&
-                          handleArticleClick(item.url, item.headline)
-                        }
-                        className={item.url ? 'cursor-pointer group' : ''}
-                      >
-                        <p className="text-sm text-zinc-400 leading-relaxed">
-                          <span className="font-bold tracking-wider text-zinc-300 group-hover:text-white transition">
-                            {item.headline}:
-                          </span>{' '}
-                          <span className="group-hover:text-zinc-300 transition">
-                            {item.content}
-                          </span>
-                        </p>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              ))}
+        /* Grid de categorías con drag and drop */
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="px-8 lg:px-12 py-12">
+            {/* Reset button */}
+            <div className="mb-8 flex justify-end">
+              <button
+                onClick={resetCategoryOrder}
+                className="text-xs tracking-[0.2em] text-zinc-600 hover:text-zinc-300 transition"
+              >
+                RESTABLECER ORDEN
+              </button>
             </div>
-          </section>
-        ))
+
+            <SortableContext
+              items={categories.map((c) => c.title)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-20">
+                {categories.map((category) => (
+                  <SortableCategory
+                    key={category.title}
+                    category={category}
+                    onArticleClick={handleArticleClick}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </div>
+        </DndContext>
       )}
 
       {/* Footer */}
