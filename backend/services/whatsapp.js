@@ -39,6 +39,10 @@ export async function initWhatsApp() {
     logger: pino({ level: 'silent' }),
     browser: ['RSMN News', 'Chrome', '1.0.0'],
     syncFullHistory: false,
+    printQRInTerminal: false,
+    shouldIgnoreJid: jid => jid.endsWith('@g.us'), // Ignore group messages
+    retryRequestDelayMs: 250,
+    maxMsgRetryCount: 3,
   })
 
   // Save credentials on update
@@ -126,8 +130,35 @@ export function isWhatsAppConnected() {
   return isConnected
 }
 
+// Message queue to prevent concurrent sends to same contact
+const messageQueue = new Map()
+
+async function sendWithQueue(to, handler) {
+  // Wait if already sending to this contact
+  while (messageQueue.has(to)) {
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  
+  messageQueue.set(to, true)
+  try {
+    await handler()
+    // Small delay between messages to prevent session conflicts
+    await new Promise((r) => setTimeout(r, 500))
+  } finally {
+    messageQueue.delete(to)
+  }
+}
+
 export async function sendMessage(to, message) {
-  const client = getWhatsAppClient()
-  await client.sendMessage(to, { text: message })
-  logger.info(`✅ Message sent to ${to}`)
+  return sendWithQueue(to, async () => {
+    const client = getWhatsAppClient()
+    
+    try {
+      await client.sendMessage(to, { text: message })
+      logger.info(`✅ Message sent to ${to}`)
+    } catch (error) {
+      logger.error(`Error sending message to ${to}:`, error.message)
+      throw error
+    }
+  })
 }
