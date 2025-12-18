@@ -15,13 +15,22 @@ function formatWhatsAppMessage(articles) {
     return `*RSMN - Noticias del día*\n\nNo hay noticias principales disponibles.\n\n📱 Más noticias en ${appUrl}`
   }
 
-  // Format each article
+  // Format each article - LIMIT TO 5 to keep message short
   const bullets = principales
-    .slice(0, 6) // Max 6 news items
-    .map((art) => `• *${art.title.toUpperCase()}:* ${art.description}`)
+    .slice(0, 5)
+    .map((art, idx) => {
+      // Truncate description if too long
+      const maxDescLength = 120
+      const desc =
+        art.description.length > maxDescLength
+          ? art.description.substring(0, maxDescLength) + '...'
+          : art.description
+
+      return `${idx + 1}. *${art.title}*\n${desc}`
+    })
     .join('\n\n')
 
-  return `*RSMN - Top 5 noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appUrl}`
+  return `*📰 RSMN - Top 5 del día*\n\n${bullets}\n\n📱 Más en ${appUrl}`
 }
 
 const commands = {

@@ -41,8 +41,10 @@ export async function initWhatsApp() {
     syncFullHistory: false,
     printQRInTerminal: false,
     shouldIgnoreJid: (jid) => jid.endsWith('@g.us'), // Ignore group messages
-    retryRequestDelayMs: 250,
-    maxMsgRetryCount: 3,
+    retryRequestDelayMs: 1000, // Increased delay
+    maxMsgRetryCount: 2,
+    defaultQueryTimeoutMs: 60000,
+    getMessage: async () => undefined, // Avoid fetching old messages
   })
 
   // Save credentials on update
@@ -136,14 +138,14 @@ const messageQueue = new Map()
 async function sendWithQueue(to, handler) {
   // Wait if already sending to this contact
   while (messageQueue.has(to)) {
-    await new Promise((r) => setTimeout(r, 100))
+    await new Promise((r) => setTimeout(r, 200))
   }
 
   messageQueue.set(to, true)
   try {
     await handler()
-    // Small delay between messages to prevent session conflicts
-    await new Promise((r) => setTimeout(r, 500))
+    // Longer delay between messages to prevent session conflicts
+    await new Promise((r) => setTimeout(r, 1500))
   } finally {
     messageQueue.delete(to)
   }
@@ -153,11 +155,22 @@ export async function sendMessage(to, message) {
   return sendWithQueue(to, async () => {
     const client = getWhatsAppClient()
 
+    // Limit message length (WhatsApp limit is ~65k but we stay conservative)
+    const maxLength = 4000
+    let finalMessage = message
+
+    if (message.length > maxLength) {
+      logger.warn(`Message too long (${message.length} chars), truncating...`)
+      finalMessage =
+        message.substring(0, maxLength - 50) +
+        '\n\n...\n\nMensaje truncado por longitud.'
+    }
+
     try {
-      await client.sendMessage(to, { text: message })
-      logger.info(`✅ Message sent to ${to}`)
+      await client.sendMessage(to, { text: finalMessage })
+      logger.info(`✅ Message sent to ${to} (${finalMessage.length} chars)`)
     } catch (error) {
-      logger.error(`Error sending message to ${to}:`, error.message)
+      logger.error(`❌ Failed to send message to ${to}:`, error)
       throw error
     }
   })
