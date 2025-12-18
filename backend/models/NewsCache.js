@@ -2,11 +2,13 @@ import mongoose from 'mongoose'
 
 const articleSchema = new mongoose.Schema(
   {
-    title: String,
-    url: String,
-    content: String,
-    portal: String,
-    explained: String,
+    category: String, // PRINCIPALES, POLÍTICA, etc.
+    title: String, // AI-optimized title
+    description: String, // AI-generated mini-summary
+    url: String, // Article URL
+    content: String, // Full scraped content
+    portal: String, // Source portal
+    explained: String, // AI-generated informal explanation
   },
   { _id: false }
 )
@@ -15,10 +17,15 @@ const newsCacheSchema = new mongoose.Schema(
   {
     summary: {
       type: String,
-      required: true,
+      required: false, // Deprecated - now we use articles directly
+      default: '',
     },
     articles: [articleSchema],
-    rawContent: String,
+    rawContent: {
+      type: String,
+      required: false, // Deprecated
+      default: '',
+    },
   },
   {
     timestamps: true,

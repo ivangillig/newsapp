@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 interface NewsItem {
   headline: string
   content: string
-  url?: string // URL del artículo
+  url?: string // Article URL
 }
 
 interface NewsCategory {
@@ -30,8 +30,8 @@ export default function Home() {
     explained?: string
   } | null>(null)
   const [articleLoading, setArticleLoading] = useState(false)
-  const [showExplained, setShowExplained] = useState(false) // Toggle entre content y explained
-  const [isTransitioning, setIsTransitioning] = useState(false) // Para animar el cambio
+  const [showExplained, setShowExplained] = useState(false) // Toggle between content and explained
+  const [isTransitioning, setIsTransitioning] = useState(false) // To animate the change
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
@@ -48,7 +48,7 @@ export default function Home() {
     year: 'numeric',
   })
 
-  // Quitar emojis del texto
+  // Remove emojis from text
   const removeEmojis = (text: string) => {
     return text
       .replace(
@@ -58,80 +58,54 @@ export default function Home() {
       .trim()
   }
 
-  // Parsear el summary markdown en categorías (sin PRINCIPALES)
-  const parseSummary = (text: string): NewsCategory[] => {
-    const categories: NewsCategory[] = []
+  // Parse articles array into categories (without PRINCIPALES)
+  const parseSummary = (articles: any[]): NewsCategory[] => {
+    try {
+      console.log(`📊 Total artículos recibidos: ${articles.length}`)
 
-    // Dividir por ## (categorías)
-    const sections = text.split(/\n##\s+/)
+      // Group articles by category
+      const categoriesMap: { [key: string]: NewsItem[] } = {}
 
-    sections.forEach((section) => {
-      if (!section.trim()) return
+      articles.forEach((article: any) => {
+        const categoryName = article.category || 'SIN CATEGORÍA'
 
-      const lines = section.split('\n')
-      let categoryTitle = removeEmojis(lines[0].replace(/^#\s*/, '')).trim()
-
-      // Ignorar PRINCIPALES y secciones especiales
-      if (
-        categoryTitle.toLowerCase().includes('principales') ||
-        categoryTitle.toLowerCase().includes('resumen ejecutivo') ||
-        categoryTitle.toLowerCase().includes('bullet') ||
-        categoryTitle.toLowerCase().includes('ultra-clave') ||
-        categoryTitle === '---'
-      ) {
-        return
-      }
-
-      const items: NewsItem[] = []
-
-      // Procesar cada línea de la sección
-      for (let i = 1; i < lines.length; i++) {
-        let line = lines[i].trim()
-        if (!line || line === '---') continue
-
-        // Detectar URLs en formato [URL]
-        if (line.match(/^\[https?:\/\//)) {
-          // Es una URL, asignarla al último item
-          const urlMatch = line.match(/\[(https?:\/\/[^\]]+)\]/)
-          if (urlMatch && items.length > 0) {
-            console.log('Found URL for item:', urlMatch[1])
-            items[items.length - 1].url = urlMatch[1]
-          }
-          continue
+        // Ignore PRINCIPALES (only for WhatsApp)
+        if (categoryName.toLowerCase().includes('principales')) {
+          console.log(`⏭️ Skipping PRINCIPALES article: ${article.title}`)
+          return
         }
 
-        // Quitar bullet points y asteriscos
-        line = line.replace(/^[-•*]\s*/, '').replace(/\*\*/g, '')
-        line = removeEmojis(line)
-
-        if (!line) continue
-
-        // Buscar patrón "Título: Contenido"
-        const colonIndex = line.indexOf(':')
-        if (colonIndex > 0 && colonIndex < 50) {
-          const headline = line.substring(0, colonIndex).trim().toUpperCase()
-          const content = line.substring(colonIndex + 1).trim()
-          if (headline && content) {
-            items.push({ headline, content })
-          }
+        if (!categoriesMap[categoryName]) {
+          categoriesMap[categoryName] = []
         }
-      }
 
-      if (categoryTitle && items.length > 0) {
-        const cleanTitle = categoryTitle
-          .replace(/^#\s*/, '')
-          .toUpperCase()
-          .trim()
-        console.log(
-          `Category ${cleanTitle}: ${items.length} items, ${
-            items.filter((i) => i.url).length
-          } with URLs`
-        )
-        categories.push({ title: cleanTitle, items })
-      }
-    })
+        categoriesMap[categoryName].push({
+          headline: article.title.toUpperCase(),
+          content: article.description,
+          url: article.url,
+        })
+      })
 
-    return categories
+      // Convert to categories array
+      const categories: NewsCategory[] = Object.entries(categoriesMap).map(
+        ([name, items]) => ({
+          title: name.toUpperCase(),
+          items,
+        })
+      )
+
+      const totalDisplayed = categories.reduce(
+        (sum, cat) => sum + cat.items.length,
+        0
+      )
+      console.log(`✅ Total artículos mostrados: ${totalDisplayed}`)
+      console.log(`📁 Categorías: ${categories.map((c) => c.title).join(', ')}`)
+
+      return categories
+    } catch (error) {
+      console.error('Error parsing articles:', error)
+      return []
+    }
   }
 
   const fetchNews = async () => {
@@ -140,9 +114,9 @@ export default function Home() {
     try {
       const res = await fetch(`${API_URL}/api/summary`)
       const data = await res.json()
-      if (data.success) {
-        console.log('Raw summary:', data.summary.substring(0, 500))
-        const parsedCategories = parseSummary(data.summary)
+      if (data.success && data.articles && Array.isArray(data.articles)) {
+        console.log('Total articles received:', data.articles.length)
+        const parsedCategories = parseSummary(data.articles)
         setCategories(parsedCategories)
       } else {
         setError('No se pudo obtener el resumen')
@@ -158,7 +132,7 @@ export default function Home() {
     fetchNews()
   }, [])
 
-  // Cerrar modal con ESC
+  // Close modal with ESC
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && selectedArticle) {
@@ -227,17 +201,17 @@ export default function Home() {
     }
   }
 
-  // Toggle con transición animada
+  // Toggle with animated transition
   const toggleExplained = () => {
     setIsTransitioning(true)
     // Fade out
     setTimeout(() => {
       setShowExplained(!showExplained)
-      // Fade in después del cambio
+      // Fade in after change
       setTimeout(() => {
         setIsTransitioning(false)
-      }, 50)
-    }, 300) // Duración del fade out
+      }, 100)
+    }, 300) // Fade out duration
   }
 
   // Agrupar categorías en filas de 3
@@ -342,23 +316,21 @@ export default function Home() {
                   </h2>
                   <div className="space-y-6">
                     {category.items.map((item, itemIdx) => (
-                      <article key={itemIdx}>
+                      <article
+                        key={itemIdx}
+                        onClick={() =>
+                          item.url &&
+                          handleArticleClick(item.url, item.headline)
+                        }
+                        className={item.url ? 'cursor-pointer group' : ''}
+                      >
                         <p className="text-sm text-zinc-400 leading-relaxed">
-                          {item.url ? (
-                            <button
-                              onClick={() =>
-                                handleArticleClick(item.url!, item.headline)
-                              }
-                              className="font-bold tracking-wider text-zinc-300 hover:text-white transition cursor-pointer text-left"
-                            >
-                              {item.headline}:
-                            </button>
-                          ) : (
-                            <span className="font-bold tracking-wider text-zinc-300">
-                              {item.headline}:
-                            </span>
-                          )}{' '}
-                          {item.content}
+                          <span className="font-bold tracking-wider text-zinc-300 group-hover:text-white transition">
+                            {item.headline}:
+                          </span>{' '}
+                          <span className="group-hover:text-zinc-300 transition">
+                            {item.content}
+                          </span>
                         </p>
                       </article>
                     ))}
@@ -474,11 +446,11 @@ export default function Home() {
             setShowExplained(false)
           }}
         >
-          <div
-            className="min-h-screen px-8 lg:px-16 py-12"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="max-w-3xl mx-auto animate-in slide-in-from-bottom duration-500">
+          <div className="min-h-screen px-8 lg:px-16 py-12 flex items-start justify-center">
+            <div
+              className="max-w-3xl w-full my-12 animate-in slide-in-from-bottom duration-500"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header del modal */}
               <div className="flex justify-between items-start mb-8">
                 <h1 className="text-3xl font-bold tracking-tight text-white">

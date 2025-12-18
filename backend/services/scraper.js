@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio'
 import { logger } from '../utils/logger.js'
 
-// Extrae la URL base de un portal
+// Extract base URL from a portal
 function getBaseUrl(url) {
   try {
     const urlObj = new URL(url)
@@ -11,7 +11,7 @@ function getBaseUrl(url) {
   }
 }
 
-// Normaliza una URL relativa a absoluta
+// Normalize a relative URL to absolute
 function normalizeUrl(link, baseUrl) {
   if (!link) return null
   if (link.startsWith('http')) return link
@@ -20,7 +20,7 @@ function normalizeUrl(link, baseUrl) {
   return `${baseUrl}/${link}`
 }
 
-// Scrapear artículo individual (contenido completo)
+// Scrape individual article (full content)
 export async function scrapeArticle(url) {
   try {
     logger.info(`📄 Scraping article: ${url}`)
@@ -53,10 +53,10 @@ export async function scrapeArticle(url) {
       $('meta[property="og:title"]').attr('content') ||
       ''
 
-    // Limpiar el título removiendo el nombre del portal (ej: "Título - Infobae")
+    // Clean title by removing portal name (e.g., "Title - Infobae")
     title = title.replace(/\s*[-|–—]\s*[^-|–—]+$/i, '').trim()
 
-    // Extract main content (varios selectores comunes)
+    // Extract main content (common selectors)
     let content = ''
     const contentSelectors = [
       'article',
@@ -71,22 +71,45 @@ export async function scrapeArticle(url) {
     for (const selector of contentSelectors) {
       const $content = $(selector)
       if ($content.length) {
-        // Extraer todos los párrafos
+        // Remove unwanted elements inside content
+        $content
+          .find(
+            'script, style, nav, footer, header, iframe, aside, .ad, .ads, button, form'
+          )
+          .remove()
+
+        // Extract all paragraphs and clean HTML
         content = $content
           .find('p')
-          .map((_, el) => $(el).text().trim())
+          .map((_, el) => {
+            // Use .text() to get only text without HTML
+            const text = $(el).text().trim()
+            // Clean HTML entities and multiple spaces
+            return text.replace(/\s+/g, ' ').trim()
+          })
           .get()
-          .filter((p) => p.length > 30) // Filtrar párrafos muy cortos
+          .filter((p) => p.length > 30) // Filter very short paragraphs
           .join('\n\n')
 
-        if (content.length > 200) break // Si encontró buen contenido, parar
+        if (content.length > 200) break // If found good content, stop
       }
     }
 
-    // Fallback: tomar todo el body
+    // Fallback: take all body and clean
     if (content.length < 200) {
-      content = $('body').text().replace(/\s+/g, ' ').trim()
+      content = $('body')
+        .text()
+        .replace(/\s+/g, ' ')
+        .replace(/\n+/g, '\n')
+        .trim()
     }
+
+    // Final cleanup: remove any residual HTML and special characters
+    content = content
+      .replace(/<[^>]+>/g, '') // Remove HTML tags
+      .replace(/&[a-z]+;/gi, '') // Remove HTML entities
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .trim()
 
     logger.info(
       `✅ Article scraped: ${title.substring(0, 50)}... (${

@@ -11,7 +11,7 @@ import User from '../models/User.js'
 // Sleep helper to avoid rate limiting
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-// Limpiar caracteres problemáticos para WhatsApp (incluyendo emojis)
+// Clean problematic characters for WhatsApp (including emojis)
 function cleanForWhatsApp(text) {
   return text
     .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Control characters
@@ -25,49 +25,42 @@ function cleanForWhatsApp(text) {
     .trim()
 }
 
-// Extraer las 6 principales noticias y formatear para WhatsApp
-function formatWhatsAppMessage(summary) {
+// Extract PRINCIPALES news and format for WhatsApp
+function formatWhatsAppMessage(articles) {
   const appDomain = process.env.APP_DOMAIN || 'rsmn.ar'
 
-  const principalesMatch = summary.match(
-    /## PRINCIPALES([\s\S]*?)(?=## [A-ZÁÉÍÓÚ]|$)/
-  )
+  try {
+    // Filter only PRINCIPALES (already comes as array)
+    const principales = articles.filter((article) =>
+      article.category.toLowerCase().includes('principales')
+    )
 
-  if (!principalesMatch) {
-    const lines = summary
-      .split('\n')
-      .filter((l) => l.trim().startsWith('-'))
-      .slice(0, 6)
-    const bullets = lines
-      .map((l) => `• ${cleanForWhatsApp(l.replace(/^-\s*/, '').trim())}`)
-      .join('\n\n')
-    return `*RSMN - Las noticias del dia*\n\n${bullets}\n\nMas noticias en ${appDomain}`
-  }
+    if (principales.length === 0) {
+      logger.warn('⚠️ No PRINCIPALES articles found for WhatsApp')
+      return `*RSMN - Las noticias del dia*\n\nNo hay noticias principales disponibles\n\nMas noticias en ${appDomain}`
+    }
 
-  const principalesText = principalesMatch[1]
-  const newsLines = principalesText
-    .split('\n')
-    .filter((l) => l.trim().startsWith('-'))
-    .slice(0, 6)
-    .map((l) => {
-      const text = cleanForWhatsApp(l.replace(/^-\s*/, '').trim())
-      const colonIndex = text.indexOf(':')
-      if (colonIndex > 0 && colonIndex < 50) {
-        const titulo = text.substring(0, colonIndex).trim().toUpperCase()
-        const desc = text.substring(colonIndex + 1).trim()
+    // Format for WhatsApp
+    const newsLines = principales
+      .slice(0, 6) // Maximum 6 news
+      .map((article) => {
+        const titulo = cleanForWhatsApp(article.title).toUpperCase()
+        const desc = cleanForWhatsApp(article.description)
         return `• *${titulo}:* ${desc}`
-      }
-      return `• ${text}`
-    })
+      })
 
-  return `*RSMN - Las noticias del dia*\n\n${newsLines.join(
-    '\n\n'
-  )}\n\nMas noticias en ${appDomain}`
+    return `*RSMN - Las noticias del dia*\n\n${newsLines.join(
+      '\n\n'
+    )}\n\nMas noticias en ${appDomain}`
+  } catch (error) {
+    logger.error('Error formatting articles for WhatsApp:', error)
+    return `*RSMN - Las noticias del dia*\n\nError al procesar noticias\n\nMas noticias en ${appDomain}`
+  }
 }
 
 async function sendDailySummary() {
   try {
-    // Verificar que WhatsApp esté conectado
+    // Verify that WhatsApp is connected
     if (!isWhatsAppConnected()) {
       logger.warn('⚠️ WhatsApp not connected, skipping daily send')
       return
@@ -167,7 +160,7 @@ export function startCronJobs() {
 
   logger.info('⏰ Daily send scheduled: 6:00 AM (Argentina time)')
 
-  // Al arrancar: verificar si necesitamos refrescar el cache
+  // On startup: check if we need to refresh cache
   isCacheRecent().then(async (isRecent) => {
     if (isRecent) {
       logger.info('📦 Cache is recent (<30 min), skipping initial refresh')
@@ -175,8 +168,10 @@ export function startCronJobs() {
       logger.info('🔄 Cache is old or missing, refreshing...')
       try {
         await refreshSummary()
+        logger.info('✅ Initial refresh completed successfully')
       } catch (err) {
-        logger.error('Initial refresh error:', err)
+        logger.error('Initial refresh error:', err.message || err)
+        logger.error('Stack trace:', err.stack)
       }
     }
 

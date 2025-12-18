@@ -7,19 +7,19 @@ import NewsCache from '../models/NewsCache.js'
 
 const router = express.Router()
 
-// Get latest summary (siempre desde cache)
+// Get latest summary (always from cache)
 router.get('/summary', async (req, res) => {
   try {
-    const summary = await getSummary()
+    const articles = await getSummary() // Now returns array directly
 
-    // Obtener timestamp del cache
+    // Get cache timestamp
     const cached = await NewsCache.findOne()
       .sort({ createdAt: -1 })
       .select('createdAt')
 
     res.json({
       success: true,
-      summary,
+      articles, // Structured articles array
       cachedAt: cached?.createdAt || new Date().toISOString(),
       timestamp: new Date().toISOString(),
     })
