@@ -9,8 +9,8 @@ function formatWhatsAppMessage(articles) {
   const appUrl = `https://${appDomain}`
 
   // Filter PRINCIPALES category
-  const principales = articles.filter(art => art.category === 'PRINCIPALES')
-  
+  const principales = articles.filter((art) => art.category === 'PRINCIPALES')
+
   if (principales.length === 0) {
     return `*RSMN - Noticias del día*\n\nNo hay noticias principales disponibles.\n\n📱 Más noticias en ${appUrl}`
   }
@@ -18,7 +18,7 @@ function formatWhatsAppMessage(articles) {
   // Format each article
   const bullets = principales
     .slice(0, 6) // Max 6 news items
-    .map(art => `• *${art.title.toUpperCase()}:* ${art.description}`)
+    .map((art) => `• *${art.title.toUpperCase()}:* ${art.description}`)
     .join('\n\n')
 
   return `*RSMN - Top 5 noticias del día*\n\n${bullets}\n\n📱 Más noticias en ${appUrl}`
@@ -29,18 +29,24 @@ const commands = {
   async actualizame(sock, from) {
     try {
       const articles = await getSummary() // Returns array
-      
+
       if (!Array.isArray(articles) || articles.length === 0) {
-        await sendMessage(from, '❌ No hay noticias disponibles. Intenta más tarde.')
+        await sendMessage(
+          from,
+          '❌ No hay noticias disponibles. Intenta más tarde.'
+        )
         return
       }
-      
+
       const whatsappMessage = formatWhatsAppMessage(articles)
       await sendMessage(from, whatsappMessage)
       logger.info(`✅ Summary sent to ${from}`)
     } catch (error) {
       logger.error('Error sending summary:', error)
-      await sendMessage(from, '❌ Error al obtener noticias. Intenta nuevamente.')
+      await sendMessage(
+        from,
+        '❌ Error al obtener noticias. Intenta nuevamente.'
+      )
     }
   },
 
@@ -53,7 +59,10 @@ const commands = {
         { upsert: true, new: true }
       )
 
-      await sendMessage(from, '✅ ¡Listo! Recibirás un resumen de noticias todos los días a las 6:00 AM.\n\nComandos disponibles:\n• "pausar" - pausar suscripción\n• "reanudar" - reanudar suscripción\n• "actualizame" - Te envío las últimas noticias')
+      await sendMessage(
+        from,
+        '✅ ¡Listo! Recibirás un resumen de noticias todos los días a las 6:00 AM.\n\nComandos disponibles:\n• "pausar" - pausar suscripción\n• "reanudar" - reanudar suscripción\n• "actualizame" - Te envío las últimas noticias'
+      )
     } catch (error) {
       logger.error('Error subscribing user:', error)
       await sendMessage(from, '❌ Error al suscribir. Intenta nuevamente.')
@@ -69,11 +78,17 @@ const commands = {
       )
 
       if (result.matchedCount === 0) {
-        await sendMessage(from, '❌ No estás suscripto. Usa "suscribir" primero.')
+        await sendMessage(
+          from,
+          '❌ No estás suscripto. Usa "suscribir" primero.'
+        )
         return
       }
 
-      await sendMessage(from, '⏸️ Suscripción pausada. Usa "reanudar" para volver a activarla.')
+      await sendMessage(
+        from,
+        '⏸️ Suscripción pausada. Usa "reanudar" para volver a activarla.'
+      )
     } catch (error) {
       await sendMessage(from, '❌ Error al pausar. Intenta nuevamente.')
     }
@@ -88,11 +103,17 @@ const commands = {
       )
 
       if (result.matchedCount === 0) {
-        await sendMessage(from, '❌ No estás suscripto. Usa "suscribir" primero.')
+        await sendMessage(
+          from,
+          '❌ No estás suscripto. Usa "suscribir" primero.'
+        )
         return
       }
 
-      await sendMessage(from, '▶️ ¡Suscripción reactivada! Volverás a recibir noticias a las 6:00 AM.')
+      await sendMessage(
+        from,
+        '▶️ ¡Suscripción reactivada! Volverás a recibir noticias a las 6:00 AM.'
+      )
     } catch (error) {
       await sendMessage(from, '❌ Error al reanudar. Intenta nuevamente.')
     }
@@ -108,7 +129,10 @@ const commands = {
         return
       }
 
-      await sendMessage(from, '👋 Te diste de baja correctamente. Si querés volver, escribí "suscribir".')
+      await sendMessage(
+        from,
+        '👋 Te diste de baja correctamente. Si querés volver, escribí "suscribir".'
+      )
       logger.info(`User ${phone} unsubscribed and deleted`)
     } catch (error) {
       await sendMessage(from, '❌ Error al dar de baja. Intenta nuevamente.')
@@ -118,7 +142,10 @@ const commands = {
   // Ayuda
   async ayuda(sock, from) {
     try {
-      await sendMessage(from, 'RSMN - Comandos: actualizame, suscribir, pausar, reanudar, baja, ayuda')
+      await sendMessage(
+        from,
+        'RSMN - Comandos: actualizame, suscribir, pausar, reanudar, baja, ayuda'
+      )
     } catch (error) {
       logger.error(`Error en ayuda: ${error.message}`)
     }
@@ -138,6 +165,9 @@ export async function handleIncomingMessage(sock, from, text, phone, lid) {
   ) {
     await commands.ayuda(sock, from)
   } else {
-    await sendMessage(from, '❓ Comando no reconocido. Usa "ayuda" para ver comandos disponibles.')
+    await sendMessage(
+      from,
+      '❓ Comando no reconocido. Usa "ayuda" para ver comandos disponibles.'
+    )
   }
 }

@@ -40,7 +40,7 @@ export async function initWhatsApp() {
     browser: ['RSMN News', 'Chrome', '1.0.0'],
     syncFullHistory: false,
     printQRInTerminal: false,
-    shouldIgnoreJid: jid => jid.endsWith('@g.us'), // Ignore group messages
+    shouldIgnoreJid: (jid) => jid.endsWith('@g.us'), // Ignore group messages
     retryRequestDelayMs: 250,
     maxMsgRetryCount: 3,
   })
@@ -138,7 +138,7 @@ async function sendWithQueue(to, handler) {
   while (messageQueue.has(to)) {
     await new Promise((r) => setTimeout(r, 100))
   }
-  
+
   messageQueue.set(to, true)
   try {
     await handler()
@@ -152,7 +152,7 @@ async function sendWithQueue(to, handler) {
 export async function sendMessage(to, message) {
   return sendWithQueue(to, async () => {
     const client = getWhatsAppClient()
-    
+
     try {
       await client.sendMessage(to, { text: message })
       logger.info(`✅ Message sent to ${to}`)
