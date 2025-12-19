@@ -318,18 +318,22 @@ export default function Home() {
         } else {
           cleanValue = '+549' + cleanValue
         }
-      } else if (cleanValue.startsWith('+54') && !cleanValue.startsWith('+549')) {
+      } else if (
+        cleanValue.startsWith('+54') &&
+        !cleanValue.startsWith('+549')
+      ) {
         // Has +54 but missing the 9
         cleanValue = '+549' + cleanValue.substring(3)
       }
 
       const phoneNumber = parsePhoneNumber(cleanValue, 'AR')
-      
+
       // Extra validation: Argentine mobile numbers must have 9 after +54
-      const isValid = phoneNumber && 
-                     phoneNumber.isValid() && 
-                     phoneNumber.number.startsWith('+549')
-      
+      const isValid =
+        phoneNumber &&
+        phoneNumber.isValid() &&
+        phoneNumber.number.startsWith('+549')
+
       setPhoneValid(isValid)
     } catch {
       setPhoneValid(false)
@@ -358,16 +362,21 @@ export default function Home() {
         } else {
           cleanValue = '+549' + cleanValue
         }
-      } else if (cleanValue.startsWith('+54') && !cleanValue.startsWith('+549')) {
+      } else if (
+        cleanValue.startsWith('+54') &&
+        !cleanValue.startsWith('+549')
+      ) {
         cleanValue = '+549' + cleanValue.substring(3)
       }
 
       const phoneNumber = parsePhoneNumber(cleanValue, 'AR')
 
       // Validate and ensure it has +549
-      if (!phoneNumber || 
-          !phoneNumber.isValid() || 
-          !phoneNumber.number.startsWith('+549')) {
+      if (
+        !phoneNumber ||
+        !phoneNumber.isValid() ||
+        !phoneNumber.number.startsWith('+549')
+      ) {
         toast.error('Número inválido', {
           description: 'Debe ser un celular argentino válido',
         })
