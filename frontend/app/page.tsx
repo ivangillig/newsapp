@@ -437,17 +437,17 @@ export default function Home() {
   }
 
   // Toggle with animated transition
-  const toggleExplained = () => {
-    setIsTransitioning(true)
-    // Fade out
-    setTimeout(() => {
-      setShowExplained(!showExplained)
-      // Fade in after change
-      setTimeout(() => {
-        setIsTransitioning(false)
-      }, 100)
-    }, 300) // Fade out duration
-  }
+  // const toggleExplained = () => {
+  //   setIsTransitioning(true)
+  //   // Fade out
+  //   setTimeout(() => {
+  //     setShowExplained(!showExplained)
+  //     // Fade in after change
+  //     setTimeout(() => {
+  //       setIsTransitioning(false)
+  //     }, 100)
+  //   }, 300) // Fade out duration
+  // }
 
   return (
     <div className="bg-black text-white h-screen overflow-y-auto">
