@@ -37,7 +37,7 @@ export async function initWhatsApp() {
     version,
     auth: state,
     logger: pino({ level: 'silent' }),
-    browser: ['RSMN News', 'Chrome', '1.0.0'],
+    browser: ['RSM News', 'Chrome', '1.0.0'],
     syncFullHistory: false,
     printQRInTerminal: false,
     shouldIgnoreJid: (jid) => jid.endsWith('@g.us'), // Ignore group messages

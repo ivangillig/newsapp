@@ -116,8 +116,6 @@ export default function Home() {
     explained?: string
   } | null>(null)
   const [articleLoading, setArticleLoading] = useState(false)
-  const [showExplained, setShowExplained] = useState(false) // Toggle between content and explained
-  const [isTransitioning, setIsTransitioning] = useState(false) // To animate the change
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
@@ -287,7 +285,6 @@ export default function Home() {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && selectedArticle) {
         setSelectedArticle(null)
-        setShowExplained(false)
       }
     }
     window.addEventListener('keydown', handleEscape)
@@ -427,7 +424,6 @@ export default function Home() {
           url: data.article.url,
           explained: data.article.explained,
         })
-        setShowExplained(false) // Empezar siempre mostrando contenido original
       } else {
         toast.error('Artículo no disponible', {
           description: 'El contenido completo aún no fue procesado',
@@ -460,16 +456,18 @@ export default function Home() {
         <div className="flex justify-between items-start md:items-end">
           <div>
             <a href="/" className="hover:opacity-80 transition">
-              <h1
-                className="text-6xl lg:text-7xl font-black tracking-[-0.04em]"
-                style={{ fontFamily: 'var(--font-league-spartan)' }}
-              >
-                RSMN<span className="text-white">.</span>
-              </h1>
+              <img src="/logo.png" alt="RSM Logo" className="h-16 lg:h-28" />
+              {/* <div className="border-8 p-1 border-white bg-black inline-block">
+                <h1
+                  className="text-5xl lg:text-7xl font-black tracking-tight text-white"
+                  style={{
+                    fontFamily: 'Montserrat, sans-serif',
+                  }}
+                >
+                  RSM
+                </h1>
+              </div> */}
             </a>
-            <p className="text-xs tracking-[0.3em] text-zinc-500 mt-2 font-mono">
-              resumen de noticias
-            </p>
           </div>
           <div className="pb-1">
             <p className="hidden md:block text-sm tracking-[0.2em] text-zinc-400 capitalize">
@@ -622,7 +620,7 @@ export default function Home() {
           <div>
             <a href="/" className="hover:opacity-80 transition">
               <h3 className="text-2xl font-bold tracking-tighter mb-2">
-                RSMN.
+                RSM
               </h3>
             </a>
             <p className="text-xs text-zinc-600 tracking-wider">
@@ -665,10 +663,10 @@ export default function Home() {
             <ul className="space-y-2 text-sm text-zinc-500">
               <li>
                 <a
-                  href="mailto:hola@rsmn.ar"
+                  href="mailto:hola@rsm.com.ar"
                   className="hover:text-white transition"
                 >
-                  hola@rsmn.ar
+                  contacto@rsm.com.ar
                 </a>
               </li>
               <li>
@@ -694,7 +692,7 @@ export default function Home() {
         {/* Bottom */}
         <div className="mt-10 pt-6 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-zinc-600 tracking-wider">
-            © 2025 RSMN. Todos los derechos reservados.
+            © 2025 RSM. Todos los derechos reservados.
           </p>
           <p className="text-xs text-zinc-700 tracking-wider">
             Desarrollado en Argentina por{' '}
@@ -716,7 +714,6 @@ export default function Home() {
           className="fixed inset-0 bg-black/95 z-50 overflow-y-auto animate-in fade-in duration-300"
           onClick={() => {
             setSelectedArticle(null)
-            setShowExplained(false)
           }}
         >
           <div className="min-h-screen px-8 lg:px-16 py-12 flex items-start justify-center">
@@ -732,7 +729,6 @@ export default function Home() {
                 <button
                   onClick={() => {
                     setSelectedArticle(null)
-                    setShowExplained(false)
                   }}
                   className="text-zinc-500 hover:text-white text-2xl ml-4 transition"
                 >
@@ -740,50 +736,27 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Botón Explicame - solo mostrar si hay explained disponible */}
-              {selectedArticle.explained && (
-                <div className="mb-6">
-                  <button
-                    onClick={toggleExplained}
-                    disabled={isTransitioning}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg transition-all duration-300 border border-zinc-700 hover:border-zinc-500 disabled:opacity-50"
-                  >
-                    <span className="text-xl">✨</span>
-                    <span className="text-sm font-medium">
-                      {showExplained ? 'Ver Original' : 'Explicame'}
-                    </span>
-                  </button>
-                </div>
-              )}
-
-              {/* Contenido del artículo con transición mágica */}
-              <div className="prose prose-invert prose-zinc max-w-none relative overflow-hidden">
-                <div
-                  className="text-zinc-300 leading-relaxed whitespace-pre-wrap transition-all duration-500 ease-out"
-                  style={{
-                    opacity: isTransitioning ? 0 : 1,
-                    transform: isTransitioning
-                      ? 'scale(0.98) translateY(10px)'
-                      : 'scale(1) translateY(0)',
-                  }}
-                >
-                  {showExplained && selectedArticle.explained
-                    ? selectedArticle.explained
-                    : selectedArticle.content}
-                </div>
-              </div>
-
-              {/* Footer del modal */}
-              <div className="mt-8 pt-6 border-t border-zinc-800">
+              {/* Botón Ver Original - abre el enlace externo */}
+              <div className="mb-6">
                 <a
                   href={selectedArticle.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-zinc-500 hover:text-white transition"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg transition-all duration-300 border border-zinc-700 hover:border-zinc-500"
                 >
-                  Ver artículo original →
+                  <span className="text-xl">🔗</span>
+                  <span className="text-sm font-medium">Ver Original</span>
                 </a>
               </div>
+
+              {/* Contenido del artículo - solo muestra la explicación */}
+              <div className="prose prose-invert prose-zinc max-w-none">
+                <div className="text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                  {selectedArticle.explained || selectedArticle.content}
+                </div>
+              </div>
+
+              {/* Footer del modal - removido ya que el botón está arriba */}
             </div>
           </div>
         </div>

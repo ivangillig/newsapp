@@ -15,7 +15,7 @@ const leagueSpartan = League_Spartan({
 })
 
 export const metadata: Metadata = {
-  title: 'RSMN. - Resumen de Noticias',
+  title: 'RSM. - Resumen de Noticias',
   description: 'Resumen diario de noticias con IA',
 }
 

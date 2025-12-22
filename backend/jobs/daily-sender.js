@@ -27,7 +27,7 @@ function cleanForWhatsApp(text) {
 
 // Extract PRINCIPALES news and format for WhatsApp
 function formatWhatsAppMessage(articles) {
-  const appDomain = process.env.APP_DOMAIN || 'rsmn.ar'
+  const appDomain = process.env.APP_DOMAIN || 'rsm.ar'
 
   try {
     // Filter only PRINCIPALES (already comes as array)
@@ -37,7 +37,7 @@ function formatWhatsAppMessage(articles) {
 
     if (principales.length === 0) {
       logger.warn('⚠️ No PRINCIPALES articles found for WhatsApp')
-      return `*RSMN - Las noticias del dia*\n\nNo hay noticias principales disponibles\n\nMas noticias en ${appDomain}`
+      return `*RSM - Las noticias del dia*\n\nNo hay noticias principales disponibles\n\nMas noticias en ${appDomain}`
     }
 
     // Format for WhatsApp
@@ -49,12 +49,12 @@ function formatWhatsAppMessage(articles) {
         return `• *${titulo}:* ${desc}`
       })
 
-    return `*RSMN - Las noticias del dia*\n\n${newsLines.join(
+    return `*RSM - Las noticias del dia*\n\n${newsLines.join(
       '\n\n'
     )}\n\nMas noticias en ${appDomain}`
   } catch (error) {
     logger.error('Error formatting articles for WhatsApp:', error)
-    return `*RSMN - Las noticias del dia*\n\nError al procesar noticias\n\nMas noticias en ${appDomain}`
+    return `*RSM - Las noticias del dia*\n\nError al procesar noticias\n\nMas noticias en ${appDomain}`
   }
 }
 

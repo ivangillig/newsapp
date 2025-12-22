@@ -67,7 +67,7 @@ router.post('/subscribe', async (req, res) => {
       const whatsappId = `${cleanPhone}@s.whatsapp.net`
       await sendMessage(
         whatsappId,
-        `¡Hola! Te suscribiste a *RSMN* 📰\n\nRecibirás un resumen de noticias todos los días a las 6:00 AM.\n\nComandos disponibles:\n• "actualizame" - Te envío las últimas noticias\n• "pausar" - Pausar envíos\n• "baja" - Cancelar suscripción`
+        `¡Hola! Te suscribiste a *RSM* 📰\n\nRecibirás un resumen de noticias todos los días a las 6:00 AM.\n\nComandos disponibles:\n• "actualizame" - Te envío las últimas noticias\n• "pausar" - Pausar envíos\n• "baja" - Cancelar suscripción`
       )
       logger.info(`WhatsApp confirmation sent to ${cleanPhone}`)
     } catch (whatsappError) {
@@ -115,7 +115,7 @@ router.post('/unsubscribe', async (req, res) => {
       const whatsappId = `${cleanPhone}@s.whatsapp.net`
       await sendMessage(
         whatsappId,
-        `Te diste de baja de *RSMN*.\n\nSi querés volver, escribí "suscribir" o visitá nuestra web.`
+        `Te diste de baja de *RSM*.\n\nSi querés volver, escribí "suscribir" o visitá nuestra web.`
       )
     } catch (whatsappError) {
       logger.warn(

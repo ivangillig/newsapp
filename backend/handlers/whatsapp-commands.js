@@ -12,7 +12,7 @@ function formatWhatsAppMessage(articles) {
   const principales = articles.filter((art) => art.category === 'PRINCIPALES')
 
   if (principales.length === 0) {
-    return `*RSMN - Noticias del día*\n\nNo hay noticias principales disponibles.\n\n📱 Más noticias en ${appUrl}`
+    return `*RSM - Noticias del día*\n\nNo hay noticias principales disponibles.\n\n📱 Más noticias en ${appUrl}`
   }
 
   // Format each article - LIMIT TO 5 to keep message short
@@ -30,7 +30,7 @@ function formatWhatsAppMessage(articles) {
     })
     .join('\n\n')
 
-  return `*📰 RSMN - Top 5 del día*\n\n${bullets}\n\n📱 Más en ${appUrl}`
+  return `*📰 RSM - Top 5 del día*\n\n${bullets}\n\n📱 Más en ${appUrl}`
 }
 
 const commands = {
@@ -153,7 +153,7 @@ const commands = {
     try {
       await sendMessage(
         from,
-        'RSMN - Comandos: actualizame, suscribir, pausar, reanudar, baja, ayuda'
+        'RSM - Comandos: actualizame, suscribir, pausar, reanudar, baja, ayuda'
       )
     } catch (error) {
       logger.error(`Error en ayuda: ${error.message}`)
