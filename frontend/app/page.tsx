@@ -619,9 +619,7 @@ export default function Home() {
           {/* Brand */}
           <div>
             <a href="/" className="hover:opacity-80 transition">
-              <h3 className="text-2xl font-bold tracking-tighter mb-2">
-                RSM
-              </h3>
+              <h3 className="text-2xl font-bold tracking-tighter mb-2">RSM</h3>
             </a>
             <p className="text-xs text-zinc-600 tracking-wider">
               resumen de noticias
