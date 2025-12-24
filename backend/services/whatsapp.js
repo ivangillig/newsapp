@@ -68,7 +68,21 @@ export async function initWhatsApp() {
         console.log('🔄 Reconectando...')
         setTimeout(initWhatsApp, 5000)
       } else {
-        console.log('❌ Sesión cerrada. Necesitas escanear el QR nuevamente.')
+        console.log('❌ Sesión cerrada. Eliminando credenciales y generando nuevo QR...')
+        // Remove old credentials
+        const fs = await import('fs')
+        const path = await import('path')
+        const authPath = './auth_info_baileys'
+        try {
+          if (fs.existsSync(authPath)) {
+            fs.rmSync(authPath, { recursive: true, force: true })
+            console.log('🗑️ Credenciales eliminadas')
+          }
+        } catch (err) {
+          console.error('Error eliminando credenciales:', err)
+        }
+        // Reinitialize to generate new QR
+        setTimeout(initWhatsApp, 3000)
       }
     }
 
