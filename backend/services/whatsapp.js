@@ -61,28 +61,63 @@ export async function initWhatsApp() {
 
     if (connection === 'close') {
       isConnected = false
-      const shouldReconnect =
-        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
+      const statusCode = lastDisconnect?.error?.output?.statusCode
+      const errorMessage = lastDisconnect?.error?.message
+      
+      console.log(`⚠️ Conexión cerrada - Código: ${statusCode}, Mensaje: ${errorMessage}`)
+      console.log('DisconnectReason.loggedOut =', DisconnectReason.loggedOut)
+      
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut
 
       if (shouldReconnect) {
         console.log('🔄 Reconectando...')
         setTimeout(initWhatsApp, 5000)
       } else {
         console.log('❌ Sesión cerrada. Eliminando credenciales y generando nuevo QR...')
-        // Remove old credentials
-        const fs = await import('fs')
-        const path = await import('path')
-        const authPath = './auth_info_baileys'
+        
+        // Close socket first to release file handles
         try {
-          if (fs.existsSync(authPath)) {
-            fs.rmSync(authPath, { recursive: true, force: true })
-            console.log('🗑️ Credenciales eliminadas')
+          if (sock) {
+            sock.ev.removeAllListeners()
+            sock.end(undefined)
+            sock = null
           }
-        } catch (err) {
-          console.error('Error eliminando credenciales:', err)
+        } catch (e) {
+          console.error('Error cerrando socket:', e.message)
         }
-        // Reinitialize to generate new QR
-        setTimeout(initWhatsApp, 3000)
+
+        // Wait for file handles to be released, then clean up
+        setTimeout(async () => {
+          const fs = await import('fs')
+          const authPath = './auth_info_baileys'
+          
+          try {
+            if (fs.existsSync(authPath)) {
+              // Delete files one by one
+              const files = fs.readdirSync(authPath)
+              for (const file of files) {
+                try {
+                  fs.unlinkSync(`${authPath}/${file}`)
+                } catch (e) {
+                  // Ignore individual file errors
+                }
+              }
+              // Try to remove empty directory
+              try {
+                fs.rmdirSync(authPath)
+              } catch (e) {
+                // Directory might still be locked, that's ok
+              }
+              console.log('🗑️ Credenciales limpiadas')
+            }
+          } catch (err) {
+            console.error('Error eliminando credenciales:', err.message)
+          }
+          
+          // Reinitialize to generate new QR
+          console.log('🔄 Generando nuevo QR...')
+          await initWhatsApp()
+        }, 3000) // Wait 3 seconds for handles to release
       }
     }
 
