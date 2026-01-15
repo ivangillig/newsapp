@@ -63,18 +63,22 @@ export async function initWhatsApp() {
       isConnected = false
       const statusCode = lastDisconnect?.error?.output?.statusCode
       const errorMessage = lastDisconnect?.error?.message
-      
-      console.log(`⚠️ Conexión cerrada - Código: ${statusCode}, Mensaje: ${errorMessage}`)
+
+      console.log(
+        `⚠️ Conexión cerrada - Código: ${statusCode}, Mensaje: ${errorMessage}`
+      )
       console.log('DisconnectReason.loggedOut =', DisconnectReason.loggedOut)
-      
+
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut
 
       if (shouldReconnect) {
         console.log('🔄 Reconectando...')
         setTimeout(initWhatsApp, 5000)
       } else {
-        console.log('❌ Sesión cerrada. Eliminando credenciales y generando nuevo QR...')
-        
+        console.log(
+          '❌ Sesión cerrada. Eliminando credenciales y generando nuevo QR...'
+        )
+
         // Close socket first to release file handles
         try {
           if (sock) {
@@ -90,7 +94,7 @@ export async function initWhatsApp() {
         setTimeout(async () => {
           const fs = await import('fs')
           const authPath = './auth_info_baileys'
-          
+
           try {
             if (fs.existsSync(authPath)) {
               // Delete files one by one
@@ -113,7 +117,7 @@ export async function initWhatsApp() {
           } catch (err) {
             console.error('Error eliminando credenciales:', err.message)
           }
-          
+
           // Reinitialize to generate new QR
           console.log('🔄 Generando nuevo QR...')
           await initWhatsApp()
