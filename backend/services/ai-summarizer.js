@@ -100,7 +100,7 @@ export async function selectArticles(rawContent) {
 
     return selection
   } catch (error) {
-    logger.error('Error selecting articles:', error)
+    logger.error('❌ Error selecting articles: %s (code: %s)', error.message, error.code || 'unknown')
     throw error
   }
 }
@@ -411,8 +411,7 @@ export async function refreshSummary() {
     logger.info('✅ News cache refreshed successfully')
     return fullArticles // Return array directly
   } catch (error) {
-    logger.error('Error refreshing summary:', error.message || error)
-    logger.error('Error stack:', error.stack)
+    logger.error('❌ Error refreshing summary: %s (code: %s)', error.message, error.code || 'unknown')
 
     // Return last cache as fallback
     const lastCache = await NewsCache.findOne().sort({ createdAt: -1 })
